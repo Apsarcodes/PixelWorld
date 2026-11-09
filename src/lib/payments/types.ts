@@ -65,6 +65,8 @@ export interface VerifiedWebhookEvent {
   status: PaymentStatus
   timestamp: number
   deliveryId?: string
+  transactionId?: string
+  metadata?: Record<string, unknown>
   raw: Record<string, unknown>
 }
 

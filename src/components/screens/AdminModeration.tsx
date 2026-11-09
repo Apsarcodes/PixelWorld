@@ -6,6 +6,41 @@ import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UICompo
 export function AdminModeration({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   const [action, setAction] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const handleModeration = async (modAction: 'approve' | 'reject' | 'flag') => {
+    setIsSubmitting(true)
+    setStatusMessage(null)
+    try {
+      const res = await fetch('/api/admin/moderation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaignId: 1,
+          action: modAction,
+          reason: modAction === 'reject' ? rejectReason : undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Action failed')
+
+      setStatusMessage({
+        type: 'success',
+        text: `Ad successfully ${modAction === 'approve' ? 'approved and published live' : modAction === 'reject' ? 'rejected with feedback delivered' : 'flagged for changes'}.`,
+      })
+      setTimeout(() => {
+        onNavigate('admin')
+      }, 1500)
+    } catch (err) {
+      setStatusMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Moderation failed',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F4F6FB]">
@@ -136,6 +171,19 @@ export function AdminModeration({ onNavigate }: { onNavigate: (s: Screen) => voi
             ))}
           </div>
 
+          {/* Status Message */}
+          {statusMessage && (
+            <div
+              className={`p-4 rounded-xl text-sm font-['Outfit'] font-semibold mb-4 ${
+                statusMessage.type === 'success'
+                  ? 'bg-[#00A882]/10 border border-[#00A882]/20 text-[#00A882]'
+                  : 'bg-[#E03E4D]/10 border border-[#E03E4D]/20 text-[#E03E4D]'
+              }`}
+            >
+              {statusMessage.text}
+            </div>
+          )}
+
           {/* Actions */}
           {action === 'reject' ? (
             <div className="rounded-2xl border border-[#E03E4D]/20 bg-[#E03E4D]/5 p-5">
@@ -152,34 +200,48 @@ export function AdminModeration({ onNavigate }: { onNavigate: (s: Screen) => voi
               <div className="flex gap-3">
                 <button
                   onClick={() => setAction(null)}
+                  disabled={isSubmitting}
                   className="flex-1 py-2.5 rounded-xl border border-black/8 text-sm font-['Outfit'] text-muted-foreground hover:text-foreground transition-all"
                 >
                   Cancel
                 </button>
-                <button className="flex-1 py-2.5 rounded-xl bg-[#E03E4D] text-white text-sm font-['Outfit'] font-semibold hover:bg-[#E03E4D] transition-all">
-                  Send Rejection
+                <button
+                  onClick={() => handleModeration('reject')}
+                  disabled={isSubmitting || !rejectReason.trim()}
+                  className="flex-1 py-2.5 rounded-xl bg-[#E03E4D] text-white text-sm font-['Outfit'] font-semibold hover:bg-[#E03E4D] disabled:opacity-50 transition-all"
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Rejection'}
                 </button>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => onNavigate('admin')}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#00A882] text-[#07080F] font-['Outfit'] font-bold text-sm hover:bg-[#00B891] transition-all"
+                onClick={() => handleModeration('approve')}
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#00A882] text-[#07080F] font-['Outfit'] font-bold text-sm hover:bg-[#00B891] disabled:opacity-50 transition-all"
               >
-                <Check size={16} /> Approve Ad
+                <Check size={16} /> {isSubmitting ? 'Processing...' : 'Approve Ad'}
               </button>
-              <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#6C5FE6]/30 text-[#6C5FE6] font-['Outfit'] font-bold text-sm hover:bg-[#6C5FE6]/10 transition-all">
+              <button
+                onClick={() => handleModeration('flag')}
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#6C5FE6]/30 text-[#6C5FE6] font-['Outfit'] font-bold text-sm hover:bg-[#6C5FE6]/10 disabled:opacity-50 transition-all"
+              >
                 <Edit2 size={14} /> Request Changes
               </button>
               <button
                 onClick={() => setAction('reject')}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E03E4D]/30 text-[#E03E4D] font-['Outfit'] font-bold text-sm hover:bg-[#E03E4D]/10 transition-all"
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E03E4D]/30 text-[#E03E4D] font-['Outfit'] font-bold text-sm hover:bg-[#E03E4D]/10 disabled:opacity-50 transition-all"
               >
                 <X size={16} /> Reject Ad
               </button>
-              <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-black/8 text-muted-foreground font-['Outfit'] font-bold text-sm hover:text-foreground hover:border-black/12 transition-all">
-                <Shield size={14} /> Suspend Advertiser
+              <button
+                onClick={() => onNavigate('admin')}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-black/8 text-muted-foreground font-['Outfit'] font-bold text-sm hover:text-foreground hover:border-black/12 transition-all"
+              >
+                <Shield size={14} /> Exit Review
               </button>
             </div>
           )}

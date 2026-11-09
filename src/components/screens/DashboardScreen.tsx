@@ -1,5 +1,26 @@
 import React, { useState } from 'react'
-import { AlertTriangle, BarChart2, Bell, Clock, Eye, FileImage, Grid3X3, LayoutDashboard, LogOut, Megaphone, MousePointer, Settings, Target, UserCircle, Wallet } from 'lucide-react'
+import {
+  AlertTriangle,
+  BarChart2,
+  Bell,
+  CheckCircle2,
+  Clock,
+  Download,
+  ExternalLink,
+  Eye,
+  FileImage,
+  FileText,
+  Grid3X3,
+  LayoutDashboard,
+  LogOut,
+  Megaphone,
+  MousePointer,
+  Receipt,
+  Settings,
+  Target,
+  UserCircle,
+  Wallet,
+} from 'lucide-react'
 import type { Screen, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
@@ -15,6 +36,64 @@ export function DashboardScreen({
   onOpenCampaign: (campaign: StoredCampaign) => void
 }) {
   const [activePage, setActivePage] = useState('overview')
+  const [invoices, setInvoices] = useState([
+    {
+      id: 'INV-2026-9821',
+      campaign: 'Swiggy Food Blitz',
+      amount: '₹1,179',
+      subtotal: '₹999',
+      gst: '₹180',
+      date: '2026-03-01',
+      provider: 'YouPI-PG (UPI)',
+      status: 'Paid',
+    },
+    {
+      id: 'INV-2026-9430',
+      campaign: 'Zomato Dining Pass',
+      amount: '₹2,949',
+      subtotal: '₹2,499',
+      gst: '₹450',
+      date: '2026-02-15',
+      provider: 'YouPI-PG (UPI)',
+      status: 'Paid',
+    },
+    {
+      id: 'INV-2026-8812',
+      campaign: 'Flipkart Mega Sale',
+      amount: '₹5,899',
+      subtotal: '₹4,999',
+      gst: '₹900',
+      date: '2026-01-20',
+      provider: 'YouPI-PG (UPI)',
+      status: 'Paid',
+    },
+  ])
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: 'Payment Confirmed',
+      message: 'Your payment via YouPI-PG for Campaign #1024 was confirmed. Your ad is now live.',
+      time: '10m ago',
+      type: 'success',
+      read: false,
+    },
+    {
+      id: 2,
+      title: 'Campaign Moderation Approved',
+      message: 'Campaign "Swiggy Food Blitz" has passed quality checks and is approved for canvas display.',
+      time: '2h ago',
+      type: 'info',
+      read: false,
+    },
+    {
+      id: 3,
+      title: 'Slot Reservation Expiring Soon',
+      message: 'Your reservation for Space #CHN-0042 will expire in 2 days. Renew to maintain visibility.',
+      time: '1d ago',
+      type: 'warning',
+      read: true,
+    },
+  ])
 
   const sidebarItems = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
@@ -66,13 +145,30 @@ export function DashboardScreen({
       <main className="flex-1 ml-60 min-h-screen">
         <header className="sticky top-0 z-30 flex items-center justify-between px-8 py-4 border-b border-black/6 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl">
           <div>
-            <h1 className="font-['Outfit'] font-black text-2xl text-foreground">Overview</h1>
+            <h1 className="font-['Outfit'] font-black text-2xl text-foreground capitalize">
+              {activePage === 'payments'
+                ? 'Payments & Invoices'
+                : activePage === 'notifications'
+                  ? 'Notifications'
+                  : activePage === 'campaigns'
+                    ? 'My Campaigns'
+                    : activePage === 'spaces'
+                      ? 'My Ad Spaces'
+                      : 'Overview'}
+            </h1>
             <p className="text-sm text-muted-foreground font-['Inter']">
-              Welcome back, Arjun — here&#39;s what&#39;s happening.
+              {activePage === 'payments'
+                ? 'Zero-fee UPI settlement receipts and tax invoices'
+                : activePage === 'notifications'
+                  ? 'Recent updates, approvals, and platform alerts'
+                  : "Welcome back, Arjun — here's what's happening."}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onClick={() => setActivePage('notifications')}
+              className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
               <Bell size={18} />
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#6C5FE6]" />
             </button>
@@ -83,6 +179,122 @@ export function DashboardScreen({
         </header>
 
         <div className="p-8">
+          {activePage === 'payments' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-['Outfit'] font-bold text-xl text-foreground">
+                    Tax Invoices & Billing
+                  </h2>
+                  <p className="text-sm text-muted-foreground font-['Inter'] mt-0.5">
+                    All transactions verified via HMAC-SHA256 direct bank settlement.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#00A882]/10 border border-[#00A882]/20 text-[#00A882] text-xs font-['Outfit'] font-semibold">
+                  <CheckCircle2 size={14} /> YouPI-PG Sandbox Ready
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-black/6 bg-card overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-black/5 bg-[#F5F7FC]/50">
+                      {['Invoice #', 'Campaign', 'Date', 'Amount', 'GST (18%)', 'Provider', 'Status', 'Action'].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            className="text-left px-6 py-3.5 text-xs font-['JetBrains_Mono'] text-muted-foreground uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((inv) => (
+                      <tr key={inv.id} className="border-b border-black/4 hover:bg-black/2 transition-colors">
+                        <td className="px-6 py-4 font-['JetBrains_Mono'] text-xs font-bold text-foreground">
+                          {inv.id}
+                        </td>
+                        <td className="px-6 py-4 font-['Outfit'] text-sm font-semibold text-foreground">
+                          {inv.campaign}
+                        </td>
+                        <td className="px-6 py-4 font-['JetBrains_Mono'] text-xs text-muted-foreground">
+                          {inv.date}
+                        </td>
+                        <td className="px-6 py-4 font-['Outfit'] text-sm font-bold text-[#6C5FE6]">
+                          {inv.amount}
+                        </td>
+                        <td className="px-6 py-4 font-['JetBrains_Mono'] text-xs text-muted-foreground">
+                          {inv.gst}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-0.5 rounded-md bg-[#6C5FE6]/10 text-[#6C5FE6] text-xs font-['JetBrains_Mono'] font-medium">
+                            {inv.provider}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge color="teal">{inv.status}</Badge>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => alert(`Downloading Invoice ${inv.id}`)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/8 hover:bg-black/5 text-xs font-['Outfit'] font-semibold text-foreground transition-all"
+                          >
+                            <Download size={12} /> Receipt
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activePage === 'notifications' && (
+            <div className="space-y-4 max-w-3xl">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-['Outfit'] font-bold text-xl text-foreground">Notifications</h2>
+                <button
+                  onClick={() => setNotifications((n) => n.map((x) => ({ ...x, read: true })))}
+                  className="text-xs text-[#6C5FE6] font-['Outfit'] font-semibold hover:underline"
+                >
+                  Mark all as read
+                </button>
+              </div>
+              <div className="space-y-3">
+                {notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className={`p-5 rounded-2xl border transition-all ${
+                      notif.read
+                        ? 'border-black/6 bg-card opacity-70'
+                        : 'border-[#6C5FE6]/30 bg-[#6C5FE6]/5 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-['Outfit'] font-bold text-sm text-foreground">
+                          {notif.title}
+                        </div>
+                        <p className="text-sm text-muted-foreground font-['Inter'] mt-1">
+                          {notif.message}
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-['JetBrains_Mono'] text-muted-foreground shrink-0 ml-4">
+                        {notif.time}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activePage !== 'payments' && activePage !== 'notifications' && (
+            <>
           {campaigns.length > 0 && (
             <div className="mb-8">
               <div className="mb-4 flex items-end justify-between">
@@ -339,6 +551,8 @@ export function DashboardScreen({
               </div>
             ))}
           </div>
+          </>
+          )}
         </div>
       </main>
     </div>

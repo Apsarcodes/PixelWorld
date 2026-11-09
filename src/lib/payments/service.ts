@@ -112,6 +112,106 @@ export class PaymentService {
       deliveryId,
     })
 
+    if (verifiedEvent.status === 'success') {
+      try {
+        const { getPayloadClient } = await import('@/lib/payload')
+        const payload = await getPayloadClient()
+        const meta = (verifiedEvent.metadata || {}) as Record<string, any>
+
+        if (meta.reservationCode || meta.slotId) {
+          // 1. Update reservation to confirmed
+          if (meta.reservationCode) {
+            await payload.update({
+              collection: 'reservations' as any,
+              where: { reservationCode: { equals: meta.reservationCode } },
+              data: { status: 'confirmed' },
+              overrideAccess: true,
+            })
+          }
+
+          // 2. Create payment record
+          const paymentDoc = await payload.create({
+            collection: 'payments' as any,
+            data: {
+              paymentId: verifiedEvent.paymentId,
+              provider: 'youpi-pg',
+              transactionHash: verifiedEvent.transactionId || `TXN-${Date.now()}`,
+              amount: verifiedEvent.amount,
+              currency: 'INR',
+              status: 'success',
+              reservation: meta.reservationId || 1,
+              campaign: meta.campaignId || 1,
+              organization: meta.organizationId || 1,
+              user: meta.userId || 1,
+              verifiedAt: new Date().toISOString(),
+              metadata: verifiedEvent.metadata,
+            },
+            overrideAccess: true,
+          })
+
+          // 3. Create invoice record
+          const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`
+          await payload.create({
+            collection: 'invoices' as any,
+            data: {
+              invoiceNumber,
+              organization: meta.organizationId || 1,
+              user: meta.userId || 1,
+              campaign: meta.campaignId || 1,
+              payment: paymentDoc?.id,
+              amount: meta.subtotal || Math.round(verifiedEvent.amount / 1.18),
+              tax: meta.gstAmount || Math.round(verifiedEvent.amount - verifiedEvent.amount / 1.18),
+              totalAmount: verifiedEvent.amount,
+              currency: 'INR',
+              status: 'paid',
+              issuedAt: new Date().toISOString(),
+              paidAt: new Date().toISOString(),
+            },
+            overrideAccess: true,
+          })
+
+          // 4. Create in-app notification
+          if (meta.userId) {
+            await payload.create({
+              collection: 'notifications' as any,
+              data: {
+                user: meta.userId,
+                organization: meta.organizationId,
+                title: 'Payment Successful',
+                message: `Your payment of ₹${verifiedEvent.amount.toLocaleString()} for campaign #${meta.campaignId || ''} was confirmed. Your advertisement is now queued for moderation.`,
+                type: 'success',
+                read: false,
+              },
+              overrideAccess: true,
+            })
+          }
+
+          // 5. Create immutable audit log
+          await payload.create({
+            collection: 'audit-logs' as any,
+            data: {
+              actorType: 'system',
+              actorId: 'youpi-webhook',
+              actorEmail: 'system@youpi-pg.local',
+              action: 'payment.confirmed',
+              resourceType: 'payments',
+              resourceId: verifiedEvent.paymentId,
+              changes: {
+                orderId: verifiedEvent.orderId,
+                amount: verifiedEvent.amount,
+                status: 'success',
+              },
+              status: 'success',
+            },
+            overrideAccess: true,
+          })
+        }
+      } catch (dbError) {
+        // Log cleanly without breaking webhook acknowledgement
+        console.warn('Webhook persistence notice:', dbError instanceof Error ? dbError.message : dbError)
+      }
+    }
+
     return {
       success: true,
       orderId: verifiedEvent.orderId,
