@@ -10,6 +10,7 @@ const relationshipID = (value: unknown): string | number | null => {
 }
 
 export const isPayloadAdmin = (req: PayloadRequest) => req.user?.collection === 'admins'
+export const isPayloadAdminAccess: Access = ({ req }) => req.user?.collection === 'admins'
 
 export const appUserDefaultOrganization = (req: PayloadRequest) => {
   if (req.user?.collection !== 'users') return null
