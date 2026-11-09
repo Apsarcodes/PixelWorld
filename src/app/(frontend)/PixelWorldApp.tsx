@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import type { AppUser, StoredCampaign, Screen } from '@/types/pixelworld'
 import { previewAuthorizationHeaders, clearPreviewSession } from '@/lib/session'
-import { NavHub } from '@/components/screens/NavHub'
 import { LandingScreen } from '@/components/screens/LandingScreen'
 import { CountryScreen } from '@/components/screens/CountryScreen'
 import { CanvasScreen } from '@/components/screens/CanvasScreen'
@@ -19,7 +18,7 @@ import { SignupScreen } from '@/components/screens/SignupScreen'
 import { UserProfileScreen } from '@/components/screens/UserProfileScreen'
 
 export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | null }) {
-  const [screen, setScreen] = useState<Screen | 'hub'>('hub')
+  const [screen, setScreen] = useState<Screen>('login')
   const [currentUser, setCurrentUser] = useState<AppUser | null>(initialUser)
   const [campaigns, setCampaigns] = useState<StoredCampaign[]>([])
   const [activeCampaign, setActiveCampaign] = useState<StoredCampaign | null>(null)
@@ -33,8 +32,21 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
         headers: previewAuthorizationHeaders(),
       })
         .then((response) => response.json())
-        .then((result) => setCurrentUser(result.user ?? null))
-        .catch(() => setCurrentUser(null))
+        .then((result) => {
+          if (result.user) {
+            setCurrentUser(result.user)
+            setScreen('dashboard')
+          } else {
+            setCurrentUser(null)
+            setScreen('login')
+          }
+        })
+        .catch(() => {
+          setCurrentUser(null)
+          setScreen('login')
+        })
+    } else {
+      setScreen('dashboard')
     }
   }, [initialUser])
 
@@ -70,7 +82,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
     })
     clearPreviewSession()
     setCurrentUser(null)
-    setScreen('landing')
+    setScreen('login')
   }
 
   const handleCampaignSaved = (campaign: StoredCampaign) => {
@@ -82,8 +94,6 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
     setActiveCampaign(campaign)
     setScreen('create-ad')
   }
-
-  if (screen === 'hub') return <NavHub onNavigate={nav} />
 
   return (
     <div key={screen} className="w-full">

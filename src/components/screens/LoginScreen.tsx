@@ -145,6 +145,12 @@ export function LoginScreen({
         {leftPanel}
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 overflow-y-auto">
           <div className="w-full max-w-md">
+            <button
+              onClick={() => onNavigate('landing')}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-6 font-['Outfit'] transition-colors"
+            >
+              <ArrowLeft size={14} /> Back to Marketplace
+            </button>
             <div className="lg:hidden mb-8">
               <PwLogo size="sm" />
             </div>

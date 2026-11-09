@@ -203,8 +203,16 @@ export function CheckoutScreen({
             <h3 className="font-['Outfit'] font-bold text-lg text-foreground">Order Total</h3>
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-['Inter']">
-                {error}
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-['Inter'] flex flex-col gap-2">
+                <span>{error}</span>
+                {error.toLowerCase().includes('sign in') && (
+                  <button
+                    onClick={() => onNavigate('login')}
+                    className="text-[#6C5FE6] font-['Outfit'] font-bold text-xs underline text-left"
+                  >
+                    Go to Sign In →
+                  </button>
+                )}
               </div>
             )}
 
