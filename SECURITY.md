@@ -61,3 +61,7 @@ PixelWorld is designed with **Defense in Depth** and **Zero Trust** principles a
 | **Replay Protection** | Webhook timestamp freshness window check | Tolerance window enforcement | **PASSED** | Phase 5 |
 | **Price Tampering** | Server-side calculation of campaign fees & GST | `PaymentService.calculatePrice` | **PASSED** | Phase 5 |
 | **Idempotency** | Prevent duplicate charge processing on webhook retries | Unique orderId and idempotency keys | **PASSED** | Phase 5 |
+| **Slot Race Protection** | 15-minute reservation lock preventing double bookings | `/api/reservations/lock` conflict check | **PASSED** | Phase 6 |
+| **Moderation Access** | Admin-only authorization for approval, rejection, and takedown | `/api/admin/moderation` role enforcement | **PASSED** | Phase 6 |
+| **Audit Immutability** | Tamper-proof audit logs for financial and moderation events | Payload `audit-logs` write-only access | **PASSED** | Phase 6 |
+| **Settlement Pipeline** | Automatic invoice generation and in-app notifications on webhook success | `paymentService.processWebhook` | **PASSED** | Phase 6 |
