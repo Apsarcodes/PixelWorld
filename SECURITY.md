@@ -7,32 +7,34 @@ PixelWorld is designed with **Defense in Depth** and **Zero Trust** principles a
 1. **Authentication & Session Security:**
    - Payload Native Auth with Argon2id / bcrypt password hashing.
    - Sessions issued via HTTP-only, secure, `SameSite=Lax` cookies to prevent XSS credential theft.
-   - Brute-force protection: rate limiting on auth endpoints + account lockouts (max 5 consecutive failed attempts).
-   - Strict password complexity validation (min 8 chars, uppercase, lowercase, numbers/symbols).
+   - Brute-force protection: in-memory sliding window rate limiting on auth endpoints (max 10 login attempts per 15 min; max 5 signups per hour per IP) + account lockouts (max 5 consecutive failed attempts).
+   - Strict password complexity validation (min 8 chars, at least 1 uppercase, 1 lowercase, 1 number).
 
 2. **Authorization & Multi-Tenant Data Isolation:**
    - Strict Role-Based Access Control (RBAC): `Visitor`, `Advertiser`, `Organization Member`, `Organization Owner`, `Moderator`, `Admin`, `Super Admin`.
    - All tenant resources (campaigns, creatives, reservations, invoices, transactions) are strictly isolated by `organizationId`.
    - Server-side enforcement: Collection-level access policies (`organizationScopedAccess`) verify tenancy on every read/write query.
-   - Insecure Direct Object Reference (IDOR) protection: User supplied document IDs are always validated against active organization membership.
+   - Insecure Direct Object Reference (IDOR) protection: User-supplied document IDs are always validated against active organization membership.
 
 3. **Input Validation & Sanitization:**
    - Whitelist validation for all API inputs (sizes, dates, status enums, text lengths).
    - Strict parameter boundary checking (preventing Prototype Pollution, SQL Injection, and NoSQL Injection).
-   - Zero-trust URL schema validation for campaign destination URLs (only `https://` allowed; blocking `javascript:`, `file:`, `data:`).
+   - Zero-trust URL schema validation for campaign destination URLs (only `https://` and `http://` allowed; strictly blocking `javascript:`, `file:`, `data:`).
+   - HTML stripping on user inputs (`sanitizeString`) to prevent stored and reflected XSS.
 
 4. **File Upload Security (Media):**
    - Whitelist restricted MIME types: strictly `image/jpeg`, `image/png`, `image/webp`, `image/gif`.
-   - SVG vector files containing executable `<script>` or event handlers are rejected or rendered in sandboxed isolation.
-   - Max file size limits enforced on server (5MB per creative).
-   - File content / magic number validation to prevent executable polyglots.
+   - Executables and dangerous vector files (SVG with scripts) are rejected.
+   - Max file size limits enforced on server (10MB per creative).
+   - Filenames sanitized with safe alphanumeric replacement.
 
-5. **Payment Security (YouPI-PG):**
+5. **Payment Security (YouPI-PG ONLY):**
    - **Zero Client-Side Trust:** Campaign publishing and reservation confirmation are strictly driven by verified server-side events, NEVER client callbacks.
    - Cryptographic HMAC-SHA256 signature verification on all incoming payment webhooks (`X-Gateway-Signature: sha256=...`).
-   - Anti-Replay: Timestamp freshness window enforcement (tolerance: 2 hours for webhook retries with duplicate ID deduplication).
+   - Anti-Replay: Timestamp freshness window enforcement (tolerance: 2 hours for webhook retries with duplicate delivery ID deduplication).
    - Idempotent transaction processing via `idempotencyKey` and database unique constraints.
-   - Price calculation occurs strictly on the server based on slot dimensions, duration, and city base rates. Client cannot manipulate amounts.
+   - Server-Side Price Calculation: `paymentService.calculatePrice` calculates total based on slot size, duration, and GST (18%). Client cannot manipulate amounts.
+   - Decoupled abstraction layer: `PaymentProvider` interface implemented by `YoupiPaymentProvider`.
 
 6. **Network & HTTP Security Headers:**
    - `Content-Security-Policy` (CSP)
@@ -44,19 +46,18 @@ PixelWorld is designed with **Defense in Depth** and **Zero Trust** principles a
 
 ---
 
-## 2. Security Checklist for Development & Releases
+## 2. Security Checklist & Audit Log
 
-| Category | Control Item | Status | Verified By |
-| :--- | :--- | :--- | :--- |
-| **Secrets** | No hardcoded API keys, tokens, or private credentials in code | PASS | AppSec Scan |
-| **Secrets** | `.env*` files excluded in `.gitignore` (`.env.example` safe) | PASS | Config Review |
-| **Auth** | Passwords hashed securely; no plaintext passwords stored/logged | PASS | Payload Auth |
-| **Auth** | Cookies configured with `httpOnly`, `secure`, `sameSite: 'lax'` | PASS | Cookie Config |
-| **Tenancy** | Organization-scoped access control on campaigns & payments | PASS | Access Policies |
-| **Uploads** | Strict image MIME type whitelist & file size limits | PASS | Upload Config |
-| **Payments** | Server-side price calculation; client amount manipulation blocked | PASS | Payment Engine |
-| **Payments** | HMAC-SHA256 signature & timestamp freshness verification on webhooks | PASS | Webhook Engine |
-| **Payments** | Idempotency keys enforced on payment creations & state transitions | PASS | DB Schema |
-| **XSS** | All user-supplied text rendered via React escape or sanitized | PASS | Frontend Audit |
-| **Headers** | Security headers configured in Next.js config | PASS | Next Config |
-| **Admin** | Admin & Moderation APIs protected with role verification | PASS | Role Guards |
+| Control Item | Requirement | Verification Method | Status | Verified On |
+| :--- | :--- | :--- | :--- | :--- |
+| **Secrets Management** | No secrets in Git history; `.env*` ignored in `.gitignore` | `grep` regex scan + git index audit | **PASSED** | Phase 1 & 2 |
+| **Auth Brute-Force** | Rate limiting on `/api/app-auth/login` & `/signup` | Sliding-window limiter unit test | **PASSED** | Phase 2 |
+| **Password Policy** | Min 8 chars, uppercase, lowercase, digit validation | Regex complexity test | **PASSED** | Phase 2 |
+| **Session Cookies** | `httpOnly`, `secure`, `sameSite: 'lax'`, partitioned | `src/lib/app-auth.ts` cookie audit | **PASSED** | Phase 2 |
+| **Media Uploads** | Restrict MIME types to safe raster images (`jpeg`, `png`, `webp`, `gif`) | Upload filter test & collection config | **PASSED** | Phase 2 |
+| **HTTP Headers** | Security headers in `next.config.ts` | Config inspection & build validation | **PASSED** | Phase 2 |
+| **Type Safety** | No TypeScript build bypasses (`ignoreBuildErrors`) | `tsc --noEmit` full compilation | **PASSED** | Phase 2 & 3 |
+| **Payment Signature** | HMAC-SHA256 cryptographic verification for YouPI-PG webhooks | `crypto.timingSafeEqual` unit audit | **PASSED** | Phase 5 |
+| **Replay Protection** | Webhook timestamp freshness window check | Tolerance window enforcement | **PASSED** | Phase 5 |
+| **Price Tampering** | Server-side calculation of campaign fees & GST | `PaymentService.calculatePrice` | **PASSED** | Phase 5 |
+| **Idempotency** | Prevent duplicate charge processing on webhook retries | Unique orderId and idempotency keys | **PASSED** | Phase 5 |
