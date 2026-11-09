@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   ArrowLeft,
   Search,
@@ -12,12 +12,44 @@ import {
   Megaphone,
   Grid3X3,
   Star,
+  Loader2,
 } from 'lucide-react'
 import type { Screen } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge, StatCard } from '@/components/common/UIComponents'
 import { INDIA_CITIES } from '@/data/mock-data'
 
 export function CountryScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+  const [cities, setCities] = useState(INDIA_CITIES)
+  const [search, setSearch] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    setIsLoading(true)
+    fetch('/api/inventory/cities')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.cities && data.cities.length > 0) {
+          setCities(data.cities)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const filteredCities = cities.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totalAds = cities.reduce((acc, c) => acc + (c.ads || 0), 0)
+  const avgOccupancy = Math.round(
+    cities.reduce((acc, c) => acc + (c.occupancy || 0), 0) / (cities.length || 1)
+  )
   return (
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between px-8 py-4 border-b border-black/6 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl sticky top-0 z-50">
@@ -63,6 +95,8 @@ export function CountryScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
               />
               <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search city, business or ad..."
                 className="bg-card border border-black/8 rounded-xl pl-9 pr-4 py-2.5 text-sm font-['Outfit'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#6C5FE6]/50 w-72"
               />
@@ -74,13 +108,13 @@ export function CountryScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
         <div className="grid grid-cols-4 gap-4 mb-10">
           <StatCard
             label="Active Ads"
-            value="12,450"
-            sub="↑ 18% this week"
+            value={totalAds.toLocaleString()}
+            sub="Live across canvases"
             icon={Megaphone}
             accent
           />
           <StatCard label="Available Spaces" value="4,820" icon={Grid3X3} />
-          <StatCard label="Total Advertisers" value="8,234" icon={Users} />
+          <StatCard label="Avg. Occupancy" value={`${avgOccupancy}%`} icon={Users} />
           <StatCard
             label="Avg. Daily Impressions"
             value="2.4M"
@@ -90,9 +124,16 @@ export function CountryScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
         </div>
 
         {/* City grid */}
-        <h2 className="font-['Outfit'] font-bold text-2xl text-foreground mb-6">Top Cities</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-['Outfit'] font-bold text-2xl text-foreground">Top Cities</h2>
+          {isLoading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground font-['JetBrains_Mono']">
+              <Loader2 size={12} className="animate-spin text-[#6C5FE6]" /> Updating live availability...
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {INDIA_CITIES.map((city) => (
+          {filteredCities.map((city) => (
             <div
               key={city.name}
               className="rounded-2xl border border-black/6 bg-card hover:border-[#6C5FE6]/30 hover:bg-[#6C5FE6]/5 transition-all cursor-pointer group p-6"

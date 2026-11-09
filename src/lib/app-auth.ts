@@ -89,13 +89,18 @@ export function createAppAuth() {
     },
 
     async payloadUser(request?: Request): Promise<(User & { collection: 'users' }) | null> {
+      let payload
+      try {
+        payload = await getPayloadClient()
+      } catch {
+        return null
+      }
       const cookieToken = (await cookies()).get(APP_SESSION_COOKIE)?.value
       const authorization = request?.headers.get('authorization')
       const headerToken =
         authorization?.startsWith('JWT ') || authorization?.startsWith('Bearer ')
           ? authorization.slice(authorization.indexOf(' ') + 1)
           : null
-      const payload = await getPayloadClient()
       const tokens = [
         ...new Set([cookieToken, headerToken].filter((token): token is string => !!token)),
       ]

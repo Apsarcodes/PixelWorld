@@ -10,12 +10,13 @@ export function SelectSpacePanel({
 }: {
   space: CanvasTile
   onClose: () => void
-  onContinue: () => void
+  onContinue: (config: { size: string; duration: number; space: CanvasTile; price: number }) => void
 }) {
   const [selectedSize, setSelectedSize] = useState<'small' | 'medium' | 'large' | 'premium'>(
     'medium',
   )
   const [duration, setDuration] = useState<7 | 30 | 90>(30)
+  const [isReserving, setIsReserving] = useState(false)
 
   const sizes = [
     { id: 'small' as const, label: 'Small', dims: '50 × 50 units', base: 299 },
@@ -33,6 +34,23 @@ export function SelectSpacePanel({
   const basePrice = sizes.find((s) => s.id === selectedSize)?.base ?? 999
   const mult = durations.find((d) => d.d === duration)?.mult ?? 1
   const price = Math.round(basePrice * mult)
+
+  const handleContinue = async () => {
+    setIsReserving(true)
+    try {
+      await fetch('/api/reservations/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slotId: space.id,
+          durationDays: duration,
+        }),
+      }).catch(() => {})
+    } finally {
+      setIsReserving(false)
+      onContinue({ size: selectedSize, duration, space, price })
+    }
+  }
 
   return (
     <div className="p-6">
@@ -125,8 +143,8 @@ export function SelectSpacePanel({
         <Clock size={12} /> This space will be reserved for 10 minutes during checkout.
       </p>
 
-      <PrimaryBtn className="w-full justify-center" onClick={onContinue}>
-        Reserve This Space <ArrowRight size={16} />
+      <PrimaryBtn className="w-full justify-center" onClick={handleContinue} disabled={isReserving}>
+        {isReserving ? 'Holding Space...' : 'Reserve This Space'} <ArrowRight size={16} />
       </PrimaryBtn>
     </div>
   )

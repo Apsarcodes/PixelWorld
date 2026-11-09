@@ -24,22 +24,49 @@ export function CanvasScreen({
   const [hoveredTile, setHoveredTile] = useState<CanvasTile | null>(null)
   const [selectedAd, setSelectedAd] = useState<CanvasTile | null>(null)
   const [selectedSpace, setSelectedSpace] = useState<CanvasTile | null>(null)
+  const [reservedSpaceConfig, setReservedSpaceConfig] = useState<{
+    size: string
+    duration: number
+    space: CanvasTile
+    price: number
+  } | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
+  const [tiles, setTiles] = useState<CanvasTile[]>(TILES)
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const persistedCampaign = campaigns[0] ?? null
 
+  useEffect(() => {
+    let isMounted = true
+    setIsLoadingSlots(true)
+    fetch('/api/inventory/slots?city=Chennai')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.tiles && data.tiles.length > 0) {
+          setTiles(data.tiles)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoadingSlots(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const adTilesByCategory = React.useMemo(() => {
     const counts: Record<string, number> = { All: 0 }
-    TILES.forEach((t) => {
+    tiles.forEach((t) => {
       if (t.type !== 'ad') return
       counts.All = (counts.All ?? 0) + 1
       const norm = normalizeCategory(t.category)
       counts[norm] = (counts[norm] ?? 0) + 1
     })
     return counts
-  }, [])
+  }, [tiles])
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -85,9 +112,21 @@ export function CanvasScreen({
   if (showCreate)
     return (
       <CreateAdScreen
-        onBack={() => setShowCreate(false)}
+        onBack={() => {
+          setShowCreate(false)
+          setReservedSpaceConfig(null)
+        }}
         onNavigate={onNavigate}
         onCampaignSaved={onCampaignSaved}
+        initialDimensions={
+          reservedSpaceConfig
+            ? {
+                width: reservedSpaceConfig.space.w || 200,
+                height: reservedSpaceConfig.space.h || 200,
+                duration: reservedSpaceConfig.duration,
+              }
+            : undefined
+        }
       />
     )
 
@@ -220,7 +259,7 @@ export function CanvasScreen({
             willChange: 'transform',
           }}
         >
-          {TILES.map((tile) => {
+          {tiles.map((tile) => {
             const tileNorm = normalizeCategory(tile.category)
             const isFiltered = activeFilter !== 'All'
             const matchesFilter = tile.type === 'available' || tileNorm === activeFilter
@@ -377,7 +416,7 @@ export function CanvasScreen({
             className="relative overflow-hidden rounded-lg bg-[#F0F2F9]"
             style={{ width: 160, height: Math.round((160 * CANVAS_H) / CANVAS_W) }}
           >
-            {TILES.filter((t) => t.type === 'ad').map((t) => {
+            {tiles.filter((t) => t.type === 'ad').map((t) => {
               const matched =
                 activeFilter === 'All' || normalizeCategory(t.category) === activeFilter
               return (
@@ -568,7 +607,8 @@ export function CanvasScreen({
           <SelectSpacePanel
             space={selectedSpace}
             onClose={() => setSelectedSpace(null)}
-            onContinue={() => {
+            onContinue={(cfg) => {
+              setReservedSpaceConfig(cfg)
               setSelectedSpace(null)
               setShowCreate(true)
             }}

@@ -11,11 +11,13 @@ export function CreateAdScreen({
   onNavigate,
   onCampaignSaved,
   initialCampaign,
+  initialDimensions,
 }: {
   onBack: () => void
   onNavigate: (s: Screen) => void
   onCampaignSaved: (campaign: StoredCampaign) => void
   initialCampaign?: StoredCampaign | null
+  initialDimensions?: { width: number; height: number; duration: number }
 }) {
   const [step, setStep] = useState(initialCampaign ? 2 : 1)
   const [ctaType, setCtaType] = useState(initialCampaign?.callToAction ?? 'Visit Website')
@@ -24,16 +26,15 @@ export function CreateAdScreen({
   const [headline, setHeadline] = useState(initialCampaign?.headline ?? '')
   const [desc, setDesc] = useState(initialCampaign?.description ?? '')
   // Space config state
-  const [adWidth, setAdWidth] = useState(initialCampaign?.width ?? 200)
-  const [adHeight, setAdHeight] = useState(initialCampaign?.height ?? 200)
+  const [adWidth, setAdWidth] = useState(initialDimensions?.width ?? initialCampaign?.width ?? 200)
+  const [adHeight, setAdHeight] = useState(initialDimensions?.height ?? initialCampaign?.height ?? 200)
   const today = new Date().toISOString().split('T')[0]
-  const defaultTo = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
+  const defaultTo = new Date(Date.now() + (initialDimensions?.duration ?? 30) * 86400000).toISOString().split('T')[0]
   const [dateFrom, setDateFrom] = useState(initialCampaign?.startsAt?.split('T')[0] ?? today)
   const [dateTo, setDateTo] = useState(
-    initialCampaign?.endsAt?.split('T')[0] ??
-      new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    initialCampaign?.endsAt?.split('T')[0] ?? defaultTo,
   )
-  const [durationPreset, setDurationPreset] = useState<string>('1')
+  const [durationPreset, setDurationPreset] = useState<string>(String(initialDimensions?.duration ?? '30'))
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [savedCampaign, setSavedCampaign] = useState<StoredCampaign | null>(initialCampaign ?? null)
   const [saveError, setSaveError] = useState('')
