@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ArrowLeft, Filter, Layers } from 'lucide-react'
+import { ArrowLeft, Filter, Layers, X } from 'lucide-react'
 import type { Screen, CanvasTile } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { TILES } from '@/data/mock-data'

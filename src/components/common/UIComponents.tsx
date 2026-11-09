@@ -1,6 +1,6 @@
 import React from 'react'
 
-export export function PwLogo({ size = 'md', dark = false }: { size?: 'sm' | 'md' | 'lg'; dark?: boolean }) {
+export function PwLogo({ size = 'md', dark = false }: { size?: 'sm' | 'md' | 'lg'; dark?: boolean }) {
   const sizes = { sm: 'text-base', md: 'text-xl', lg: 'text-3xl' }
   return (
     <span className={`font-['Outfit'] font-black tracking-tight ${sizes[size]}`}>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { AlertTriangle, ArrowLeft, Check, Edit2, Shield } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, Edit2, Shield, X } from 'lucide-react'
 import type { Screen } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 

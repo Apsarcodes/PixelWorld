@@ -1,8 +1,9 @@
-import React, {'useEffect', 'useState', 'useRef'} from 'react'
-import { AlertTriangle, ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, ChevronLeft, Clock, ExternalLink, MapPin, Minus, Plus, Sparkles, Upload } from 'lucide-react'
+import React, { useEffect, useState, useRef } from 'react'
+import { AlertTriangle, ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, ChevronLeft, Clock, ExternalLink, MapPin, Minus, Plus, Sparkles, Upload, X } from 'lucide-react'
 import type { Screen, CanvasTile, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { AdPreviewScreen } from '@/components/screens/AdPreviewScreen'
+import { CheckoutScreen } from '@/components/screens/CheckoutScreen'
 import { previewAuthorizationHeaders } from '@/lib/session'
 
 export function CreateAdScreen({

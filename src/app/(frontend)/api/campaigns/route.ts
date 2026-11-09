@@ -157,7 +157,7 @@ export async function POST(request: Request) {
         alt: `${brandName} — ${headline}`,
         purpose: 'creative',
         uploadedBy: user.id,
-        organization: organizationID,
+        organization: organizationID as any,
       },
       file: {
         data: Buffer.from(await file.arrayBuffer()),

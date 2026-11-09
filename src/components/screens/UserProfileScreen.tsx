@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Edit2, Laptop, Layers, LayoutDashboard, LogOut, Phone, Plus, Settings, Shield, Smartphone, Upload, UserCircle, Users } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Edit2, Laptop, Layers, LayoutDashboard, LogOut, Phone, Plus, Settings, Shield, Smartphone, Upload, UserCircle, Users, X } from 'lucide-react'
 import type { Screen, AppUser } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { UAM_ROLES, TEAM_MEMBERS } from '@/data/mock-data'

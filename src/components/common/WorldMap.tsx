@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 export function WorldMap({ onCountryClick }: { onCountryClick: (country: string) => void }) {
   const [hovered, setHovered] = useState<string | null>(null)

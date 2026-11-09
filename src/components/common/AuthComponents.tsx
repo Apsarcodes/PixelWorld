@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { PwLogo } from './UIComponents'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, AlertTriangle } from 'lucide-react'
 
 export function GoogleIcon() {
   return (

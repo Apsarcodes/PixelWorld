@@ -15,6 +15,7 @@ import {
   Activity,
   Star,
   Users,
+  Megaphone,
 } from 'lucide-react'
 import type { Screen } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge, StatCard } from '@/components/common/UIComponents'

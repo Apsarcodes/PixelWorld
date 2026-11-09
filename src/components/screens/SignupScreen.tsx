@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AlertTriangle, ArrowRight, Check, ChevronLeft, Eye, Inbox, Phone, RefreshCw, Sparkles } from 'lucide-react'
 import type { Screen, AppUser } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
-import { GoogleIcon, AuthPanel, AuthInput } from '@/components/common/AuthComponents'
-import { savePreviewSession } from '@/lib/session'
+import { GoogleIcon, AuthPanel, AuthInput, OtpInput } from '@/components/common/AuthComponents'
+import { savePreviewSession, previewAuthorizationHeaders } from '@/lib/session'
 
 export function SignupScreen({
   onNavigate,

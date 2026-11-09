@@ -1,5 +1,5 @@
-import React, {'useCallback', 'useEffect', 'useState', 'useRef'} from 'react'
-import { ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minus, Navigation, Phone, Play, Plus, RotateCcw, Search, Share2, ShoppingBag } from 'lucide-react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
+import { ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minus, Navigation, Phone, Play, Plus, RotateCcw, Search, Share2, ShoppingBag, X } from 'lucide-react'
 import type { Screen, CanvasTile, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'

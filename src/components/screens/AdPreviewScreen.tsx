@@ -1,6 +1,8 @@
-import React, {'useState'} from 'react'
+import React, { useState } from 'react'
 import { ArrowRight, Edit2, ExternalLink, Phone } from 'lucide-react'
-import { PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
+import type { Screen, StoredCampaign } from '@/types/pixelworld'
+import { PwLogo, PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
+import { CreativeImage } from '@/components/common/CreativeImage'
 
 export function AdPreviewScreen({
   onBack,

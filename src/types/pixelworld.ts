@@ -77,31 +77,33 @@ export interface CityCard {
 }
 
 export interface DashCampaign {
-  id: number
-  brand: string
-  location: string
+  name: string
+  city: string
+  canvas: string
   status: string
-  dates: string
-  spend: string
-  views: string
-  clicks: string
-  ctr: string
+  start: string
+  expiry: string
+  days: number
+  impressions: string
+  interactions: string
+  emoji: string
   color: string
 }
 
 export interface UamRole {
-  role: string
-  badge: string
-  badgeColor: string
+  id: string
+  label: string
+  color: string
   desc: string
-  perms: string[]
 }
 
 export interface TeamMember {
+  id: number
   name: string
   email: string
   role: string
-  roleBadgeColor: string
+  avatar: string
   status: string
   joined: string
+  lastActive: string
 }

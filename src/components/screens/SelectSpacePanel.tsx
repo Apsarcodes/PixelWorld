@@ -1,5 +1,5 @@
-import React, {'useState'} from 'react'
-import { ArrowRight, Clock } from 'lucide-react'
+import React, { useState } from 'react'
+import { ArrowRight, Clock, X } from 'lucide-react'
 import type { CanvasTile } from '@/types/pixelworld'
 import { PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 

@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Eye, HelpCircle, Inbox, RefreshCw, Shield } from 'lucide-react'
 import type { Screen, AppUser } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
 import { GoogleIcon, AuthPanel, AuthInput, OtpInput } from '@/components/common/AuthComponents'
-import { savePreviewSession } from '@/lib/session'
+import { savePreviewSession, previewAuthorizationHeaders } from '@/lib/session'
 
 type LoginView = 'login' | 'forgot' | 'otp' | 'reset' | 'reset-success'
 

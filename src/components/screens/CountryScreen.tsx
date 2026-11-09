@@ -9,9 +9,12 @@ import {
   Users,
   Eye,
   Plus,
+  Megaphone,
+  Grid3X3,
+  Star,
 } from 'lucide-react'
 import type { Screen } from '@/types/pixelworld'
-import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
+import { PwLogo, PrimaryBtn, GhostBtn, Badge, StatCard } from '@/components/common/UIComponents'
 import { INDIA_CITIES } from '@/data/mock-data'
 
 export function CountryScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
