@@ -44,6 +44,32 @@ const nextConfig: NextConfig = {
   // blocks its dev resources (`/_next/*`, HMR WebSocket, internal endpoints)
   // unless the origin is listed here, and a blocked HMR socket stalls Turbopack
   // so the Payload `/admin` panel renders blank in the preview iframe.
+  // HTTP Security Headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(self)',
+          },
+        ],
+      },
+    ]
+  },
   // Dev-only - ignored by `next build`.
   //
   allowedDevOrigins: makePublicPreviewOrigin ? [makePublicPreviewOrigin] : [],

@@ -5,10 +5,11 @@ import { BodyCustomCode, renderHeadCustomCode } from '@/lib/make-custom-code'
 import { makeSiteSettings, sanitizeHtmlAttribute } from '@/lib/make-site-settings'
 import './styles.css'
 
-const defaultTitle = '@figma/my-make-file'
+const defaultTitle = 'PixelWorld — Location-Based Digital Advertising Marketplace'
 const title = makeSiteSettings.title ?? defaultTitle
 const description =
-  makeSiteSettings.description ?? 'Built with Next.js, Payload CMS, and Tailwind CSS'
+  makeSiteSettings.description ??
+  'Hyper-local digital advertising marketplace with live pixel canvas exploration and instant campaign booking.'
 const favicon = makeSiteSettings.icons?.icon
 const socialImage = makeSiteSettings.openGraph?.image
 const googleAnalyticsId = sanitizeHtmlAttribute(makeSiteSettings.analytics?.googleAnalyticsId)

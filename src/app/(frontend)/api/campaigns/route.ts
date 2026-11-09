@@ -1,5 +1,7 @@
 import { appAuth } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { isAllowedImageMimeType, sanitizeString } from '@/lib/security'
 import type { Campaign } from '@/payload-types'
 
 const CTA_VALUES = [
@@ -16,7 +18,7 @@ const CTA_OPTIONS = new Set<string>(CTA_VALUES)
 
 const text = (form: FormData, key: string, maxLength: number) => {
   const value = form.get(key)
-  return typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
+  return sanitizeString(value, maxLength)
 }
 
 const integer = (form: FormData, key: string) => {
@@ -61,6 +63,11 @@ export async function GET(request: Request) {
   const user = await appAuth.payloadUser(request)
   if (!user) return Response.json({ error: 'Please sign in to view campaigns.' }, { status: 401 })
 
+  const rateLimit = checkRateLimit(`campaigns_get:${user.id}`, { limit: 100, windowMs: 60000 })
+  if (!rateLimit.success) {
+    return Response.json({ error: 'Too many requests. Please slow down.' }, { status: 429 })
+  }
+
   const payload = await getPayloadClient()
   const result = await payload.find({
     collection: 'campaigns',
@@ -80,6 +87,12 @@ export async function POST(request: Request) {
   if (!user)
     return Response.json({ error: 'Please sign in before creating a campaign.' }, { status: 401 })
 
+  const ip = getClientIp(request)
+  const rateLimit = checkRateLimit(`campaigns_post:${user.id}_${ip}`, { limit: 20, windowMs: 60000 })
+  if (!rateLimit.success) {
+    return Response.json({ error: 'Too many requests. Please wait before creating another campaign.' }, { status: 429 })
+  }
+
   const form = await request.formData()
   const file = form.get('creative')
   const name = text(form, 'name', 120)
@@ -95,14 +108,14 @@ export async function POST(request: Request) {
   if (!(file instanceof File) || file.size === 0) {
     return Response.json({ error: 'Choose an image creative.' }, { status: 400 })
   }
-  if (!file.type.startsWith('image/')) {
+  if (!isAllowedImageMimeType(file.type)) {
     return Response.json(
-      { error: 'Creative must be a JPG, PNG, GIF, or WebP image.' },
+      { error: 'Creative must be a JPG, PNG, GIF, or WebP image. SVG or executable formats are not allowed.' },
       { status: 400 },
     )
   }
-  if (file.size > 50 * 1024 * 1024) {
-    return Response.json({ error: 'Creative must be smaller than 50 MB.' }, { status: 400 })
+  if (file.size > 10 * 1024 * 1024) {
+    return Response.json({ error: 'Creative must be smaller than 10 MB.' }, { status: 400 })
   }
   if (!name || !brandName || !headline) {
     return Response.json(
@@ -113,9 +126,9 @@ export async function POST(request: Request) {
   if (!CTA_OPTIONS.has(callToAction)) {
     return Response.json({ error: 'Choose a valid call to action.' }, { status: 400 })
   }
-  if (width < 100 || width > 800 || height < 100 || height > 800) {
+  if (width < 80 || width > 1200 || height < 80 || height > 1200) {
     return Response.json(
-      { error: 'Creative dimensions must be between 100 and 800 pixels.' },
+      { error: 'Creative dimensions must be between 80 and 1200 pixels.' },
       { status: 400 },
     )
   }
@@ -128,9 +141,9 @@ export async function POST(request: Request) {
   const payload = await getPayloadClient()
   let mediaID: string | number | null = null
   const organizationID = relationshipID(user.defaultOrganization)
-  if (typeof organizationID !== 'string') {
+  if (!organizationID) {
     return Response.json(
-      { error: 'Your account does not have an advertiser organization.' },
+      { error: 'Your account does not have an active organization.' },
       { status: 403 },
     )
   }
@@ -149,7 +162,7 @@ export async function POST(request: Request) {
       file: {
         data: Buffer.from(await file.arrayBuffer()),
         mimetype: file.type,
-        name: file.name,
+        name: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
         size: file.size,
       },
     })

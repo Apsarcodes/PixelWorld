@@ -90,9 +90,10 @@ export const Media: CollectionConfig = {
     createTagField({ relationTo: 'tags' }),
   ],
   upload: {
-    mimeTypes: ['image/*'],
+    mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
     modifyResponseHeaders: ({ headers }) => {
       headers.set('Cache-Control', 'private, no-store')
+      headers.set('X-Content-Type-Options', 'nosniff')
       return headers
     },
   },

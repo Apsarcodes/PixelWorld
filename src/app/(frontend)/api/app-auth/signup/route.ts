@@ -1,5 +1,7 @@
 import { appAuth, isEmbeddedPreviewRuntime } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { isStrongPassword, isValidEmail, sanitizeString } from '@/lib/security'
 
 const accountTypes = new Set(['advertiser', 'business', 'agency'])
 const categoryValues = [
@@ -19,17 +21,31 @@ const categories = new Set<string>(categoryValues)
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request)
+    const rateLimit = checkRateLimit(`signup:${ip}`, { limit: 5, windowMs: 60 * 60 * 1000 })
+    if (!rateLimit.success) {
+      return Response.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateLimit.resetMs / 1000)),
+          },
+        },
+      )
+    }
+
     const input = (await request.json()) as Record<string, unknown>
-    const firstName = typeof input.firstName === 'string' ? input.firstName.trim() : ''
-    const lastName = typeof input.lastName === 'string' ? input.lastName.trim() : ''
+    const firstName = sanitizeString(input.firstName, 80)
+    const lastName = sanitizeString(input.lastName, 80)
     const email = typeof input.email === 'string' ? input.email.trim().toLowerCase() : ''
-    const phone = typeof input.phone === 'string' ? input.phone.trim() : ''
+    const phone = sanitizeString(input.phone, 20)
     const password = typeof input.password === 'string' ? input.password : ''
     const accountType =
       typeof input.accountType === 'string' && accountTypes.has(input.accountType)
         ? input.accountType
         : 'advertiser'
-    const company = typeof input.company === 'string' ? input.company.trim() : ''
+    const company = sanitizeString(input.company, 120)
     const preferredCategories = Array.isArray(input.preferredCategories)
       ? input.preferredCategories.filter(
           (value): value is Category => typeof value === 'string' && categories.has(value),
@@ -42,15 +58,29 @@ export async function POST(request: Request) {
         { status: 400 },
       )
     }
-    if (password.length < 8) {
-      return Response.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
+
+    if (!isValidEmail(email)) {
+      return Response.json(
+        { error: 'Please enter a valid email address.' },
+        { status: 400 },
+      )
     }
+
+    const passwordCheck = isStrongPassword(password)
+    if (!passwordCheck.valid) {
+      return Response.json(
+        { error: passwordCheck.reason || 'Password does not meet security requirements.' },
+        { status: 400 },
+      )
+    }
+
     if (input.agreed !== true) {
       return Response.json(
         { error: 'You must accept the Terms of Service and Privacy Policy.' },
         { status: 400 },
       )
     }
+
     if ((accountType === 'business' || accountType === 'agency') && !company) {
       return Response.json({ error: 'Company name is required.' }, { status: 400 })
     }
