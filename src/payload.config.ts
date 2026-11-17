@@ -1,4 +1,7 @@
 import path from 'path'
+import { buildConfig } from 'payload'
+import { postgresAdapter } from '@payloadcms/db-postgres'
+import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildFigmaConfig } from '@payloadcms/figma'
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { en as adminLanguage } from '@payloadcms/translations/languages/en'
@@ -24,15 +27,15 @@ import { Notifications } from './collections/Notifications'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-export default buildFigmaConfig({
+const baseConfig = {
   admin: {
     user: Admins.slug,
     constrainWidth: true,
     dashboard: {
       widgets: [],
       defaultLayout: [
-        { widgetSlug: 'activity', width: 'full' },
-        { widgetSlug: 'collections', width: 'full' },
+        { widgetSlug: 'activity' as const, width: 'full' as const },
+        { widgetSlug: 'collections' as const, width: 'full' as const },
       ],
     },
     importMap: {
@@ -40,7 +43,7 @@ export default buildFigmaConfig({
     },
   },
   i18n: {
-    fallbackLanguage: 'en',
+    fallbackLanguage: 'en' as const,
     supportedLanguages: { en: adminLanguage },
   },
   collections: [
@@ -71,5 +74,24 @@ export default buildFigmaConfig({
     defaultLocale: 'en',
   },
   plugins: [mcpPlugin({})],
-  figma: {},
-})
+}
+
+const usePostgres = Boolean(process.env.DATABASE_URI) || !process.env.FIGMA_EID
+
+export default usePostgres
+  ? buildConfig({
+      ...baseConfig,
+      editor: lexicalEditor(),
+      secret: process.env.PAYLOAD_SECRET || 'dev_insecure_payload_secret_must_be_changed_in_prod_32bytes',
+      db: postgresAdapter({
+        pool: {
+          connectionString:
+            process.env.DATABASE_URI ||
+            'postgresql://postgres:postgres@127.0.0.1:5432/pixelworld',
+        },
+      }),
+    })
+  : buildFigmaConfig({
+      ...baseConfig,
+      figma: {},
+    })

@@ -85,6 +85,15 @@ export interface Config {
     organizations: Organization;
     'organization-memberships': OrganizationMembership;
     campaigns: Campaign;
+    cities: City;
+    locations: Location;
+    'inventory-slots': InventorySlot;
+    reservations: Reservation;
+    payments: Payment;
+    invoices: Invoice;
+    'moderation-reviews': ModerationReview;
+    'audit-logs': AuditLog;
+    notifications: Notification;
     media: Media;
     folders: Folder;
     tags: Tag;
@@ -101,6 +110,15 @@ export interface Config {
     organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
     'organization-memberships': OrganizationMembershipsSelect<false> | OrganizationMembershipsSelect<true>;
     campaigns: CampaignsSelect<false> | CampaignsSelect<true>;
+    cities: CitiesSelect<false> | CitiesSelect<true>;
+    locations: LocationsSelect<false> | LocationsSelect<true>;
+    'inventory-slots': InventorySlotsSelect<false> | InventorySlotsSelect<true>;
+    reservations: ReservationsSelect<false> | ReservationsSelect<true>;
+    payments: PaymentsSelect<false> | PaymentsSelect<true>;
+    invoices: InvoicesSelect<false> | InvoicesSelect<true>;
+    'moderation-reviews': ModerationReviewsSelect<false> | ModerationReviewsSelect<true>;
+    'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     folders: FoldersSelect<false> | FoldersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
@@ -111,7 +129,7 @@ export interface Config {
     'payload-llm-instructions': PayloadLlmInstructionsSelect<false> | PayloadLlmInstructionsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: ('false' | 'none' | 'null') | false | null | 'en' | 'en'[];
   globals: {};
@@ -171,32 +189,43 @@ export interface UserAuthOperations {
  * via the `definition` "admins".
  */
 export interface Admin {
-  id: string;
-  figmaHandle?: string | null;
-  figmaImageUrl?: string | null;
-  userGroups?: string[] | null;
-  makePermission?: ('view' | 'edit') | null;
-  email?: string | null;
+  id: number;
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
   collection: 'admins';
 }
 /**
@@ -204,13 +233,13 @@ export interface Admin {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
   firstName: string;
   lastName?: string | null;
   phone?: string | null;
   accountType: 'advertiser' | 'business' | 'agency';
   company?: string | null;
-  defaultOrganization?: (string | null) | Organization;
+  defaultOrganization?: (number | null) | Organization;
   preferredCategories?:
     | (
         | 'Food & Dining'
@@ -231,20 +260,20 @@ export interface User {
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -271,27 +300,27 @@ export interface User {
  * via the `definition` "organizations".
  */
 export interface Organization {
-  id: string;
+  id: number;
   name: string;
   type: 'personal' | 'business' | 'agency';
-  owner: string | User;
+  owner: number | User;
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -301,28 +330,28 @@ export interface Organization {
  * via the `definition` "organization-memberships".
  */
 export interface OrganizationMembership {
-  id: string;
-  organization: string | Organization;
-  user: string | User;
+  id: number;
+  organization: number | Organization;
+  user: number | User;
   role: 'owner' | 'manager' | 'analyst' | 'billing';
   status: 'active' | 'invited' | 'suspended';
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -332,27 +361,27 @@ export interface OrganizationMembership {
  * via the `definition` "campaigns".
  */
 export interface Campaign {
-  id: string;
+  id: number;
   name: string;
   brandName: string;
   headline: string;
   description?: string | null;
   callToAction: 'Visit Website' | 'Call Now' | 'WhatsApp' | 'Get Directions' | 'Shop Now' | 'Book Now' | 'Learn More';
-  creative: string | Media;
+  creative: number | Media;
   width: number;
   height: number;
   startsAt: string;
   endsAt: string;
-  organization: string | Organization;
-  createdBy: string | User;
+  organization: number | Organization;
+  createdBy: number | User;
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -363,32 +392,30 @@ export interface Campaign {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   purpose: 'creative' | 'organization-logo' | 'other';
-  uploadedBy: string | User;
-  organization: string | Organization;
-  _h_folders?: (string | null) | Folder;
-  _h_tags?: (string | Tag)[] | null;
-  prefix?: string | null;
-  _objectKey?: string | null;
+  uploadedBy: number | User;
+  organization: number | Organization;
+  _h_folders?: (number | null) | Folder;
+  _h_tags?: (number | Tag)[] | null;
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -417,26 +444,26 @@ export interface Media {
  * via the `definition` "folders".
  */
 export interface Folder {
-  id: string;
-  _h_folders?: (string | null) | Folder;
+  id: number;
+  _h_folders?: (number | null) | Folder;
   name: string;
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -448,26 +475,26 @@ export interface Folder {
  * via the `definition` "tags".
  */
 export interface Tag {
-  id: string;
-  _h_tags?: (string | null) | Tag;
+  id: number;
+  _h_tags?: (number | null) | Tag;
   name: string;
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -476,10 +503,379 @@ export interface Tag {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities".
+ */
+export interface City {
+  id: number;
+  name: string;
+  slug: string;
+  state: string;
+  country: string;
+  icon?: string | null;
+  totalSpaces?: number | null;
+  occupiedSpaces?: number | null;
+  occupancyRate?: number | null;
+  basePriceDaily?: number | null;
+  active?: boolean | null;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "locations".
+ */
+export interface Location {
+  id: number;
+  name: string;
+  slug: string;
+  city: number | City;
+  canvasWidth: number;
+  canvasHeight: number;
+  gridCellSize: number;
+  address?: string | null;
+  active?: boolean | null;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory-slots".
+ */
+export interface InventorySlot {
+  id: number;
+  slotIdentifier: string;
+  city: number | City;
+  location?: (number | null) | Location;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  sizeCategory: 'small' | 'medium' | 'large' | 'premium';
+  status: 'available' | 'reserved' | 'occupied' | 'maintenance';
+  basePriceDaily: number;
+  activeCampaign?: (number | null) | Campaign;
+  reservedUntil?: string | null;
+  reservedBy?: (number | null) | User;
+  brandName?: string | null;
+  category?: string | null;
+  tagline?: string | null;
+  views?: string | null;
+  clicks?: string | null;
+  emoji?: string | null;
+  color?: string | null;
+  website?: string | null;
+  phone?: string | null;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reservations".
+ */
+export interface Reservation {
+  id: number;
+  reservationCode: string;
+  slot: number | InventorySlot;
+  campaign: number | Campaign;
+  organization: number | Organization;
+  user: number | User;
+  durationDays: number;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
+  status: 'pending_payment' | 'confirmed' | 'expired' | 'cancelled';
+  lockedUntil: string;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments".
+ */
+export interface Payment {
+  id: number;
+  paymentId: string;
+  provider: 'youpi-pg' | 'manual';
+  transactionHash?: string | null;
+  upiId?: string | null;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'success' | 'failed' | 'refunded';
+  reservation: number | Reservation;
+  campaign: number | Campaign;
+  organization: number | Organization;
+  user: number | User;
+  verifiedAt?: string | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invoices".
+ */
+export interface Invoice {
+  id: number;
+  invoiceNumber: string;
+  organization: number | Organization;
+  user: number | User;
+  campaign: number | Campaign;
+  payment?: (number | null) | Payment;
+  amount: number;
+  tax?: number | null;
+  totalAmount: number;
+  currency: string;
+  status: 'draft' | 'issued' | 'paid' | 'void';
+  issuedAt: string;
+  paidAt?: string | null;
+  pdfUrl?: string | null;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-reviews".
+ */
+export interface ModerationReview {
+  id: number;
+  campaign: number | Campaign;
+  reviewer?: (number | null) | Admin;
+  action: 'approved' | 'rejected' | 'flagged' | 'takedown';
+  reason?: string | null;
+  notes?: string | null;
+  complianceFlags?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  reviewedAt: string;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs".
+ */
+export interface AuditLog {
+  id: number;
+  actorType: 'admin' | 'user' | 'system';
+  actorId: string;
+  actorEmail?: string | null;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  changes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  status: 'success' | 'failure';
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: number;
+  user: number | User;
+  organization?: (number | null) | Organization;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  link?: string | null;
+  read?: boolean | null;
+  readAt?: string | null;
+  createdBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedBy?:
+    | ({
+        relationTo: 'admins';
+        value: number | Admin;
+      } | null)
+    | ({
+        relationTo: 'users';
+        value: number | User;
+      } | null);
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -496,49 +892,85 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'organizations';
-        value: string | Organization;
+        value: number | Organization;
       } | null)
     | ({
         relationTo: 'organization-memberships';
-        value: string | OrganizationMembership;
+        value: number | OrganizationMembership;
       } | null)
     | ({
         relationTo: 'campaigns';
-        value: string | Campaign;
+        value: number | Campaign;
+      } | null)
+    | ({
+        relationTo: 'cities';
+        value: number | City;
+      } | null)
+    | ({
+        relationTo: 'locations';
+        value: number | Location;
+      } | null)
+    | ({
+        relationTo: 'inventory-slots';
+        value: number | InventorySlot;
+      } | null)
+    | ({
+        relationTo: 'reservations';
+        value: number | Reservation;
+      } | null)
+    | ({
+        relationTo: 'payments';
+        value: number | Payment;
+      } | null)
+    | ({
+        relationTo: 'invoices';
+        value: number | Invoice;
+      } | null)
+    | ({
+        relationTo: 'moderation-reviews';
+        value: number | ModerationReview;
+      } | null)
+    | ({
+        relationTo: 'audit-logs';
+        value: number | AuditLog;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: number | Notification;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
       } | null)
     | ({
         relationTo: 'folders';
-        value: string | Folder;
+        value: number | Folder;
       } | null)
     | ({
         relationTo: 'tags';
-        value: string | Tag;
+        value: number | Tag;
       } | null);
   globalSlug?: string | null;
   user:
     | {
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       }
     | {
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       };
   updatedAt: string;
   createdAt: string;
@@ -548,15 +980,15 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user:
     | {
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       }
     | {
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       };
   key?: string | null;
   value?:
@@ -576,7 +1008,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -596,20 +1028,20 @@ export interface PayloadLlmInstruction {
   createdBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedBy?:
     | ({
         relationTo: 'admins';
-        value: string | Admin;
+        value: number | Admin;
       } | null)
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null);
   updatedAt: string;
   createdAt: string;
@@ -619,15 +1051,25 @@ export interface PayloadLlmInstruction {
  * via the `definition` "admins_select".
  */
 export interface AdminsSelect<T extends boolean = true> {
-  figmaHandle?: T;
-  figmaImageUrl?: T;
-  userGroups?: T;
-  makePermission?: T;
-  email?: T;
   createdBy?: T;
   updatedBy?: T;
   updatedAt?: T;
   createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  resetPasswordRequestedAt?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -715,6 +1157,198 @@ export interface CampaignsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities_select".
+ */
+export interface CitiesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  state?: T;
+  country?: T;
+  icon?: T;
+  totalSpaces?: T;
+  occupiedSpaces?: T;
+  occupancyRate?: T;
+  basePriceDaily?: T;
+  active?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "locations_select".
+ */
+export interface LocationsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  city?: T;
+  canvasWidth?: T;
+  canvasHeight?: T;
+  gridCellSize?: T;
+  address?: T;
+  active?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory-slots_select".
+ */
+export interface InventorySlotsSelect<T extends boolean = true> {
+  slotIdentifier?: T;
+  city?: T;
+  location?: T;
+  x?: T;
+  y?: T;
+  width?: T;
+  height?: T;
+  sizeCategory?: T;
+  status?: T;
+  basePriceDaily?: T;
+  activeCampaign?: T;
+  reservedUntil?: T;
+  reservedBy?: T;
+  brandName?: T;
+  category?: T;
+  tagline?: T;
+  views?: T;
+  clicks?: T;
+  emoji?: T;
+  color?: T;
+  website?: T;
+  phone?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reservations_select".
+ */
+export interface ReservationsSelect<T extends boolean = true> {
+  reservationCode?: T;
+  slot?: T;
+  campaign?: T;
+  organization?: T;
+  user?: T;
+  durationDays?: T;
+  startDate?: T;
+  endDate?: T;
+  totalAmount?: T;
+  status?: T;
+  lockedUntil?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments_select".
+ */
+export interface PaymentsSelect<T extends boolean = true> {
+  paymentId?: T;
+  provider?: T;
+  transactionHash?: T;
+  upiId?: T;
+  amount?: T;
+  currency?: T;
+  status?: T;
+  reservation?: T;
+  campaign?: T;
+  organization?: T;
+  user?: T;
+  verifiedAt?: T;
+  metadata?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invoices_select".
+ */
+export interface InvoicesSelect<T extends boolean = true> {
+  invoiceNumber?: T;
+  organization?: T;
+  user?: T;
+  campaign?: T;
+  payment?: T;
+  amount?: T;
+  tax?: T;
+  totalAmount?: T;
+  currency?: T;
+  status?: T;
+  issuedAt?: T;
+  paidAt?: T;
+  pdfUrl?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-reviews_select".
+ */
+export interface ModerationReviewsSelect<T extends boolean = true> {
+  campaign?: T;
+  reviewer?: T;
+  action?: T;
+  reason?: T;
+  notes?: T;
+  complianceFlags?: T;
+  reviewedAt?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs_select".
+ */
+export interface AuditLogsSelect<T extends boolean = true> {
+  actorType?: T;
+  actorId?: T;
+  actorEmail?: T;
+  action?: T;
+  resourceType?: T;
+  resourceId?: T;
+  ipAddress?: T;
+  userAgent?: T;
+  changes?: T;
+  status?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  user?: T;
+  organization?: T;
+  title?: T;
+  message?: T;
+  type?: T;
+  link?: T;
+  read?: T;
+  readAt?: T;
+  createdBy?: T;
+  updatedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
@@ -724,8 +1358,6 @@ export interface MediaSelect<T extends boolean = true> {
   organization?: T;
   _h_folders?: T;
   _h_tags?: T;
-  prefix?: T;
-  _objectKey?: T;
   createdBy?: T;
   updatedBy?: T;
   updatedAt?: T;
@@ -864,7 +1496,22 @@ export interface CollectionQueryWidget {
   data?: {
     title?: string | null;
     relatedCollection:
-      'admins' | 'organizations' | 'organization-memberships' | 'campaigns' | 'media' | 'folders' | 'tags';
+      | 'admins'
+      | 'organizations'
+      | 'organization-memberships'
+      | 'campaigns'
+      | 'cities'
+      | 'locations'
+      | 'inventory-slots'
+      | 'reservations'
+      | 'payments'
+      | 'invoices'
+      | 'moderation-reviews'
+      | 'audit-logs'
+      | 'notifications'
+      | 'media'
+      | 'folders'
+      | 'tags';
     where?:
       | {
           [k: string]: unknown;
@@ -887,7 +1534,25 @@ export interface CollectionQueryWidget {
 export interface ActivityWidget {
   data?: {
     excludedCollections?:
-      ('admins' | 'organizations' | 'organization-memberships' | 'campaigns' | 'media' | 'folders' | 'tags')[] | null;
+      | (
+          | 'admins'
+          | 'organizations'
+          | 'organization-memberships'
+          | 'campaigns'
+          | 'cities'
+          | 'locations'
+          | 'inventory-slots'
+          | 'reservations'
+          | 'payments'
+          | 'invoices'
+          | 'moderation-reviews'
+          | 'audit-logs'
+          | 'notifications'
+          | 'media'
+          | 'folders'
+          | 'tags'
+        )[]
+      | null;
   };
   width: 'small' | 'medium' | 'large' | 'x-large' | 'full';
 }
