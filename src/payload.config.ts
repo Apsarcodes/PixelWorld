@@ -88,6 +88,11 @@ export default usePostgres
           connectionString:
             process.env.DATABASE_URI ||
             'postgresql://postgres:postgres@127.0.0.1:5432/pixelworld',
+          ssl:
+            process.env.DATABASE_URI?.includes('supabase.co') ||
+            process.env.DATABASE_URI?.includes('supabase.com')
+              ? { rejectUnauthorized: false }
+              : undefined,
         },
       }),
     })

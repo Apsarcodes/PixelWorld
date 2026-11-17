@@ -14,15 +14,24 @@ export async function seedDatabase() {
       collection: 'cities' as any,
       where: { slug: { equals: slug } },
       limit: 1,
+      overrideAccess: true,
     })
 
     if (existing.docs.length === 0) {
       const doc = await payload.create({
         collection: 'cities' as any,
+        overrideAccess: true,
         data: {
           name: city.name,
           slug,
-          state: city.name === 'Chennai' ? 'Tamil Nadu' : city.name === 'Mumbai' ? 'Maharashtra' : city.name === 'Bangalore' ? 'Karnataka' : 'India',
+          state:
+            city.name === 'Chennai'
+              ? 'Tamil Nadu'
+              : city.name === 'Mumbai'
+              ? 'Maharashtra'
+              : city.name === 'Bangalore'
+              ? 'Karnataka'
+              : 'India',
           country: 'India',
           icon: city.icon,
           totalSpaces: 100,
@@ -46,11 +55,13 @@ export async function seedDatabase() {
       collection: 'locations' as any,
       where: { slug: { equals: 'chennai-main-canvas' } },
       limit: 1,
+      overrideAccess: true,
     })
     let locationId = existingLoc.docs[0]?.id
     if (!locationId) {
       const loc = await payload.create({
         collection: 'locations' as any,
+        overrideAccess: true,
         data: {
           name: 'Chennai Main Canvas',
           slug: 'chennai-main-canvas',
@@ -73,11 +84,13 @@ export async function seedDatabase() {
         collection: 'inventory-slots' as any,
         where: { slotIdentifier: { equals: slotId } },
         limit: 1,
+        overrideAccess: true,
       })
 
       if (existingSlot.docs.length === 0) {
         await payload.create({
           collection: 'inventory-slots' as any,
+          overrideAccess: true,
           data: {
             slotIdentifier: slotId,
             city: chennaiId,
