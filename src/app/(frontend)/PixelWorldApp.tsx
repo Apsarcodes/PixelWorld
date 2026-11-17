@@ -67,10 +67,31 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
   }, [currentUser])
 
   const nav = (nextScreen: Screen) => {
-    if ((nextScreen === 'dashboard' || nextScreen === 'profile') && !currentUser) {
-      setScreen('login')
+    if (!currentUser) {
+      if (nextScreen !== 'login' && nextScreen !== 'signup') {
+        setScreen('login')
+        return
+      }
+      setScreen(nextScreen)
       return
     }
+
+    const isAdmin =
+      currentUser.email?.includes('admin') ||
+      (currentUser as any).role === 'admin' ||
+      (currentUser as any).accountType === 'admin' ||
+      (currentUser as any).collection === 'admins'
+
+    if (
+      (nextScreen === 'admin' ||
+        nextScreen === 'admin-mod' ||
+        nextScreen === 'admin-canvas') &&
+      !isAdmin
+    ) {
+      setScreen('dashboard')
+      return
+    }
+
     setScreen(nextScreen)
   }
 
