@@ -62,3 +62,6 @@ pnpm-debug.log*
 /.figma/design-context/
 /.plugins/
 /.opencode-skills/
+
+# Local services & sub-repositories
+YouPI-PG/
