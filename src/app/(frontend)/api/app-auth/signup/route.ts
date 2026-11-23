@@ -97,6 +97,7 @@ export async function POST(request: Request) {
         phone: phone || undefined,
         password,
         accountType: accountType as 'advertiser' | 'business' | 'agency',
+        role: 'user',
         company: company || undefined,
         preferredCategories,
         termsAcceptedAt: new Date().toISOString(),

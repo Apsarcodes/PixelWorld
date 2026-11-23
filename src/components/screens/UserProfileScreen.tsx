@@ -2,7 +2,35 @@ import React, { useState } from 'react'
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Edit2, Laptop, Layers, LayoutDashboard, LogOut, Phone, Plus, Settings, Shield, Smartphone, Upload, UserCircle, Users, X } from 'lucide-react'
 import type { Screen, AppUser, TeamMember } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
-import { UAM_ROLES } from '@/data/mock-data'
+
+const PLATFORM_ROLES = [
+  {
+    id: 'admin',
+    label: 'Admin',
+    color: 'bg-purple-100 text-purple-700',
+    desc: 'Full administrative access: moderation queue, analytics, all city canvases, payments & audit logs.',
+    perms: [
+      { name: 'Moderate & Approve Ads', allowed: true },
+      { name: 'Manage City Canvases', allowed: true },
+      { name: 'View Platform Revenue & Payments', allowed: true },
+      { name: 'Access Payload CMS /admin', allowed: true },
+      { name: 'Book & Launch Campaigns', allowed: true },
+    ],
+  },
+  {
+    id: 'user',
+    label: 'User',
+    color: 'bg-teal-100 text-teal-700',
+    desc: 'Standard advertiser account: book pixel slots on the canvas, upload banner creatives, and make UPI payments.',
+    perms: [
+      { name: 'Moderate & Approve Ads', allowed: false },
+      { name: 'Manage City Canvases', allowed: false },
+      { name: 'View Platform Revenue & Payments', allowed: false },
+      { name: 'Access Payload CMS /admin', allowed: false },
+      { name: 'Book & Launch Campaigns', allowed: true },
+    ],
+  },
+]
 
 export function UserProfileScreen({
   onNavigate,
@@ -418,7 +446,7 @@ export function UserProfileScreen({
                       onChange={(e) => setInviteRole(e.target.value)}
                       className="bg-white border border-black/8 rounded-xl px-4 py-2.5 pr-9 text-sm font-['Outfit'] text-foreground focus:outline-none appearance-none cursor-pointer"
                     >
-                      {UAM_ROLES.map((r) => (
+                      {PLATFORM_ROLES.map((r) => (
                         <option key={r.id} value={r.id}>
                           {r.label}
                         </option>
@@ -452,7 +480,9 @@ export function UserProfileScreen({
                   </thead>
                   <tbody>
                     {members.map((m) => {
-                      const roleObj = UAM_ROLES.find((r) => r.id === m.role)
+                      const roleObj =
+                        PLATFORM_ROLES.find((r) => r.id === m.role) ||
+                        (user.role === 'admin' ? PLATFORM_ROLES[0] : PLATFORM_ROLES[1])
                       return (
                         <tr
                           key={m.id}
@@ -481,7 +511,7 @@ export function UserProfileScreen({
                                 autoFocus
                                 className="bg-[#EDF0F8] border border-[#6C5FE6]/30 rounded-lg px-2 py-1 text-xs font-['Outfit'] font-semibold text-[#6C5FE6] focus:outline-none cursor-pointer"
                               >
-                                {UAM_ROLES.map((r) => (
+                                {PLATFORM_ROLES.map((r) => (
                                   <option key={r.id} value={r.id}>
                                     {r.label}
                                   </option>
@@ -554,7 +584,7 @@ export function UserProfileScreen({
 
               {/* Role cards */}
               <div className="grid grid-cols-2 gap-4">
-                {UAM_ROLES.map((role) => (
+                {PLATFORM_ROLES.map((role) => (
                   <div key={role.id} className="rounded-2xl border border-black/8 bg-card p-5">
                     <div className="flex items-center justify-between mb-3">
                       <span
@@ -565,29 +595,20 @@ export function UserProfileScreen({
                     </div>
                     <p className="text-xs text-muted-foreground font-['Inter'] mb-4">{role.desc}</p>
                     <div className="space-y-2">
-                      {[
-                        ['View campaigns', ['owner', 'manager', 'analyst', 'billing']],
-                        ['Create / edit ads', ['owner', 'manager']],
-                        ['Approve campaigns', ['owner']],
-                        ['View analytics', ['owner', 'manager', 'analyst']],
-                        ['Manage billing', ['owner', 'billing']],
-                        ['Invite team members', ['owner']],
-                        ['Delete account', ['owner']],
-                      ].map(([perm, allowed]) => {
-                        const has = (allowed as string[]).includes(role.id)
-                        return (
-                          <div key={perm as string} className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground font-['Inter']">
-                              {perm as string}
-                            </span>
-                            <span
-                              className={`text-xs font-['JetBrains_Mono'] font-semibold ${has ? 'text-[#00A882]' : 'text-black/20'}`}
-                            >
-                              {has ? '✓' : '✗'}
-                            </span>
-                          </div>
-                        )
-                      })}
+                      {role.perms.map((p) => (
+                        <div key={p.name} className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground font-['Inter']">
+                            {p.name}
+                          </span>
+                          <span
+                            className={`text-xs font-['JetBrains_Mono'] font-semibold ${
+                              p.allowed ? 'text-[#00A882]' : 'text-black/20'
+                            }`}
+                          >
+                            {p.allowed ? '✓' : '✗'}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

@@ -21,18 +21,21 @@ import {
   UserCircle,
   Wallet,
 } from 'lucide-react'
-import type { Screen, StoredCampaign } from '@/types/pixelworld'
+import type { Screen, StoredCampaign, AppUser } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
+import { Shield } from 'lucide-react'
 
 export function DashboardScreen({
   onNavigate,
   campaigns,
   onOpenCampaign,
+  user,
 }: {
   onNavigate: (s: Screen) => void
   campaigns: StoredCampaign[]
   onOpenCampaign: (campaign: StoredCampaign) => void
+  user?: AppUser | null
 }) {
   const [activePage, setActivePage] = useState('overview')
   const [invoices, setInvoices] = useState<
@@ -124,10 +127,20 @@ export function DashboardScreen({
                 ? 'Zero-fee UPI settlement receipts and tax invoices'
                 : activePage === 'notifications'
                   ? 'Recent updates, approvals, and platform alerts'
-                  : "Welcome back, Arjun — here's what's happening."}
+                  : user
+                    ? `Welcome back, ${user.firstName} — here's what's happening.`
+                    : "Welcome back — here's what's happening."}
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => onNavigate('admin')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#6C5FE6]/10 hover:bg-[#6C5FE6]/20 text-[#6C5FE6] text-xs font-['Outfit'] font-bold transition-all cursor-pointer"
+              >
+                <Shield size={14} /> Admin Portal
+              </button>
+            )}
             <button
               onClick={() => setActivePage('notifications')}
               className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"

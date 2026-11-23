@@ -5,7 +5,7 @@ import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UICompo
 import { CreativeImage } from '@/components/common/CreativeImage'
 import { SelectSpacePanel } from '@/components/screens/SelectSpacePanel'
 import { CreateAdScreen } from '@/components/screens/CreateAdScreen'
-import { CELL, CANVAS_W, CANVAS_H, TILES, FILTER_CATEGORIES, normalizeCategory } from '@/data/mock-data'
+import { CELL, CANVAS_W, CANVAS_H, FILTER_CATEGORIES, normalizeCategory } from '@/constants/canvas'
 
 export function CanvasScreen({
   onNavigate,
@@ -34,7 +34,7 @@ export function CanvasScreen({
   } | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
-  const [tiles, setTiles] = useState<CanvasTile[]>(TILES)
+  const [tiles, setTiles] = useState<CanvasTile[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)

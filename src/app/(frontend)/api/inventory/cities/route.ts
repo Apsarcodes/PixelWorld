@@ -1,6 +1,16 @@
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { getPayloadClient } from '@/lib/payload'
-import { INDIA_CITIES } from '@/data/mock-data'
+
+const DEFAULT_INDIAN_CITIES = [
+  { name: 'Chennai', icon: '🏛️', state: 'Tamil Nadu' },
+  { name: 'Mumbai', icon: '🌊', state: 'Maharashtra' },
+  { name: 'Bangalore', icon: '🌳', state: 'Karnataka' },
+  { name: 'Delhi', icon: '🕌', state: 'Delhi NCR' },
+  { name: 'Hyderabad', icon: '💎', state: 'Telangana' },
+  { name: 'Kolkata', icon: '🌉', state: 'West Bengal' },
+  { name: 'Ahmedabad', icon: '🪁', state: 'Gujarat' },
+  { name: 'Pune', icon: '🏔️', state: 'Maharashtra' },
+]
 
 export async function GET(request: Request) {
   try {
@@ -13,13 +23,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const search = (searchParams.get('search') || '').toLowerCase().trim()
 
-    let cities = INDIA_CITIES.map((c) => ({
+    let cities = DEFAULT_INDIAN_CITIES.map((c) => ({
       name: c.name,
       slug: c.name.toLowerCase().replace(/\s+/g, '-'),
       icon: c.icon,
-      ads: c.ads,
-      available: c.available,
-      occupancy: c.occupancy,
+      ads: 0,
+      available: 100,
+      occupancy: 0,
       country: 'India',
     }))
 
@@ -34,23 +44,29 @@ export async function GET(request: Request) {
       })
 
       if (dbCities.docs.length > 0) {
-        cities = dbCities.docs.map((doc: any) => ({
-          name: doc.name,
-          slug: doc.slug,
-          icon: doc.icon || '🏛️',
-          ads: (doc.totalSpaces || 100) - (doc.occupiedSpaces || 0),
-          available: Math.max(0, 100 - (doc.occupancyRate || 0)),
-          occupancy: doc.occupancyRate || 0,
-          country: doc.country || 'India',
-        }))
+        cities = dbCities.docs.map((doc: any) => {
+          const total = doc.totalSpaces || 100
+          const occupied = doc.occupiedSpaces || 0
+          const available = Math.max(0, total - occupied)
+          const occupancy = Math.round((occupied / (total || 1)) * 100)
+          return {
+            name: doc.name,
+            slug: doc.slug,
+            icon: doc.icon || '🏛️',
+            ads: occupied,
+            available,
+            occupancy,
+            country: doc.country || 'India',
+          }
+        })
       }
     } catch {
-      // Graceful fallback to canonical dataset when DB collection is cold/unseeded
+      // Fallback to fresh cities catalog
     }
 
     if (search) {
-      cities = cities.filter((c) =>
-        c.name.toLowerCase().includes(search) || c.slug.toLowerCase().includes(search)
+      cities = cities.filter(
+        (c) => c.name.toLowerCase().includes(search) || c.slug.toLowerCase().includes(search),
       )
     }
 
@@ -60,7 +76,7 @@ export async function GET(request: Request) {
       total: cities.length,
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch cities'
+    const message = error instanceof Error ? error.message : 'Unable to load cities'
     return Response.json({ error: message }, { status: 500 })
   }
 }

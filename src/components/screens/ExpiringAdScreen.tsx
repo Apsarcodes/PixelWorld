@@ -1,15 +1,63 @@
-import React, { useState } from 'react'
-import { AlertTriangle, ArrowLeft, ArrowRight, Clock } from 'lucide-react'
-import type { Screen } from '@/types/pixelworld'
-import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
+import React from 'react'
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react'
+import type { Screen, StoredCampaign } from '@/types/pixelworld'
+import { PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
+import { CreativeImage } from '@/components/common/CreativeImage'
 
-export function ExpiringAdScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+export function ExpiringAdScreen({
+  onNavigate,
+  campaigns = [],
+}: {
+  onNavigate: (s: Screen) => void
+  campaigns?: StoredCampaign[]
+}) {
+  const expiringCampaign = campaigns.find((c) => {
+    if (!c.endsAt) return false
+    const diffDays = Math.ceil((new Date(c.endsAt).getTime() - Date.now()) / 86400000)
+    return diffDays > 0 && diffDays <= 7
+  })
+
+  if (!expiringCampaign) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="max-w-md w-full rounded-3xl border border-black/8 bg-card p-8 shadow-xl text-center space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-[#00A882]/15 text-[#00A882] flex items-center justify-center mx-auto">
+            <CheckCircle2 size={36} />
+          </div>
+          <div>
+            <h2 className="font-['Outfit'] font-black text-2xl text-foreground">
+              All Campaigns Active
+            </h2>
+            <p className="text-sm text-muted-foreground font-['Inter'] mt-1">
+              You currently have no ad spaces expiring soon. All your active ad spaces are running smoothly.
+            </p>
+          </div>
+          <div className="pt-2">
+            <PrimaryBtn className="w-full justify-center" onClick={() => onNavigate('dashboard')}>
+              Back to Dashboard
+            </PrimaryBtn>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const daysLeft = Math.max(
+    0,
+    Math.ceil((new Date(expiringCampaign.endsAt).getTime() - Date.now()) / 86400000),
+  )
+  const expiryDateFormatted = new Date(expiringCampaign.endsAt).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="max-w-2xl w-full">
         <button
           onClick={() => onNavigate('dashboard')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] mb-8"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] mb-8 cursor-pointer"
         >
           <ArrowLeft size={16} /> Back to Dashboard
         </button>
@@ -23,35 +71,35 @@ export function ExpiringAdScreen({ onNavigate }: { onNavigate: (s: Screen) => vo
               <div className="font-['Outfit'] font-black text-xl text-foreground">
                 Your ad space is expiring soon!
               </div>
-              <div className="text-sm text-amber-400 font-['Outfit'] font-semibold">
-                Your Chennai ad space expires in 3 days
+              <div className="text-sm text-amber-500 font-['Outfit'] font-semibold">
+                Your ad space expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
               </div>
             </div>
           </div>
 
           <div className="rounded-2xl border border-black/8 bg-card p-6 mb-6">
             <div className="flex items-center gap-4 mb-5">
-              <div className="w-16 h-16 rounded-xl bg-[#F59E0B]/20 flex items-center justify-center text-3xl">
-                🪔
+              <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#EDF0F8] relative shrink-0">
+                <CreativeImage campaign={expiringCampaign} sizes="64px" />
               </div>
               <div>
                 <div className="font-['Outfit'] font-bold text-lg text-foreground">
-                  Festival Offer Campaign
+                  {expiringCampaign.name}
                 </div>
                 <div className="text-sm text-muted-foreground font-['JetBrains_Mono']">
-                  CHN-A-0842 · Chennai Main Canvas
+                  {expiringCampaign.brandName} · {expiringCampaign.width} × {expiringCampaign.height}px
                 </div>
-                <div className="text-sm text-amber-400 font-['Outfit'] font-semibold mt-1">
-                  Expires: 28 July 2025
+                <div className="text-sm text-amber-500 font-['Outfit'] font-semibold mt-1">
+                  Expires: {expiryDateFormatted}
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: 'Total Views', value: '128,440', color: '#6C5FE6' },
-                { label: 'Interactions', value: '9,821', color: '#00A882' },
-                { label: 'CTA Clicks', value: '3,450', color: '#EC4899' },
+                { label: 'Total Views', value: '12.4K', color: '#6C5FE6' },
+                { label: 'Interactions', value: '840', color: '#00A882' },
+                { label: 'CTA Clicks', value: '310', color: '#EC4899' },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -77,20 +125,7 @@ export function ExpiringAdScreen({ onNavigate }: { onNavigate: (s: Screen) => vo
             </GhostBtn>
           </div>
         </div>
-
-        <div className="rounded-2xl border border-black/8 bg-card p-5">
-          <div className="flex items-start gap-3">
-            <Clock size={16} className="text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-sm text-muted-foreground font-['Inter'] leading-relaxed">
-              If you don&#39;t renew, your ad will be removed and the space will become available to
-              other advertisers after the{' '}
-              <strong className="text-foreground">48-hour grace period</strong>. You can still
-              reactivate it within this window if you change your mind.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   )
 }
-

@@ -1,23 +1,57 @@
-import React, { useState } from 'react'
-import { AlertTriangle, ArrowLeft, Check, Edit2, Shield, X } from 'lucide-react'
-import type { Screen } from '@/types/pixelworld'
+import React, { useState, useEffect } from 'react'
+import { AlertTriangle, ArrowLeft, Check, Edit2, Shield, X, Loader2 } from 'lucide-react'
+import type { Screen, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
+import { CreativeImage } from '@/components/common/CreativeImage'
+import { previewAuthorizationHeaders } from '@/lib/session'
 
 export function AdminModeration({ onNavigate }: { onNavigate: (s: Screen) => void }) {
-  const [action, setAction] = useState<string | null>(null)
+  const [campaigns, setCampaigns] = useState<StoredCampaign[]>([])
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const [rejectReason, setRejectReason] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(
+    null,
+  )
+
+  const fetchQueue = () => {
+    setIsLoading(true)
+    fetch('/api/admin/moderation', {
+      credentials: 'include',
+      headers: previewAuthorizationHeaders(),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.campaigns) {
+          setCampaigns(data.campaigns)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false))
+  }
+
+  useEffect(() => {
+    fetchQueue()
+  }, [])
+
+  const currentCampaign = campaigns[selectedIndex] ?? null
 
   const handleModeration = async (modAction: 'approve' | 'reject' | 'flag') => {
+    if (!currentCampaign) return
     setIsSubmitting(true)
     setStatusMessage(null)
+
     try {
       const res = await fetch('/api/admin/moderation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...previewAuthorizationHeaders(),
+        },
+        credentials: 'include',
         body: JSON.stringify({
-          campaignId: 1,
+          campaignId: currentCampaign.id,
           action: modAction,
           reason: modAction === 'reject' ? rejectReason : undefined,
         }),
@@ -27,10 +61,19 @@ export function AdminModeration({ onNavigate }: { onNavigate: (s: Screen) => voi
 
       setStatusMessage({
         type: 'success',
-        text: `Ad successfully ${modAction === 'approve' ? 'approved and published live' : modAction === 'reject' ? 'rejected with feedback delivered' : 'flagged for changes'}.`,
+        text: `Campaign "${currentCampaign.name}" ${
+          modAction === 'approve'
+            ? 'approved & published live to the canvas'
+            : modAction === 'reject'
+              ? 'rejected'
+              : 'flagged for changes'
+        }.`,
       })
+
       setTimeout(() => {
-        onNavigate('admin')
+        setStatusMessage(null)
+        setRejectReason('')
+        fetchQueue()
       }, 1500)
     } catch (err) {
       setStatusMessage({
@@ -47,207 +90,145 @@ export function AdminModeration({ onNavigate }: { onNavigate: (s: Screen) => voi
       <header className="flex items-center gap-4 px-8 py-4 border-b border-black/5 bg-[rgba(244,246,251,0.95)] backdrop-blur-xl sticky top-0 z-50">
         <button
           onClick={() => onNavigate('admin')}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit']"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] cursor-pointer"
         >
           <ArrowLeft size={16} /> Admin Dashboard
         </button>
-        <div className="w-px h-5 bg-white/10" />
-        <h1 className="font-['Outfit'] font-bold text-lg text-foreground">Ad Moderation</h1>
+        <div className="w-px h-5 bg-black/10" />
+        <h1 className="font-['Outfit'] font-bold text-lg text-foreground">Ad Moderation Queue</h1>
         <div className="ml-auto flex items-center gap-3">
-          <Badge color="amber">23 Pending</Badge>
+          <Badge color={campaigns.length > 0 ? 'amber' : 'teal'}>
+            {campaigns.length} {campaigns.length === 1 ? 'Pending' : 'Pending'}
+          </Badge>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-8 py-8 grid grid-cols-2 gap-8">
-        {/* Creative preview */}
-        <div>
-          <div className="rounded-2xl border border-black/8 bg-card overflow-hidden mb-4">
-            <div className="aspect-video bg-gradient-to-br from-[#FF6B35] to-[#E23744] flex flex-col items-center justify-center gap-3 relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/20" />
-              <div className="text-5xl">🍕</div>
-              <div className="font-['Outfit'] font-black text-white text-3xl">
-                Chennai Pizza Co.
-              </div>
-              <div className="font-['Inter'] text-white/80 text-base">
-                Best pizza in the city · Free delivery
-              </div>
-              <div className="px-6 py-2.5 bg-white rounded-xl text-[#FF6B35] font-['Outfit'] font-bold">
-                Order Now
-              </div>
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        {isLoading ? (
+          <div className="py-24 flex items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="animate-spin" size={20} />
+            <span className="text-sm font-['Outfit']">Loading moderation queue...</span>
+          </div>
+        ) : !currentCampaign ? (
+          <div className="max-w-md mx-auto py-24 text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-[#00A882]/15 text-[#00A882] flex items-center justify-center mx-auto">
+              <Check size={32} />
+            </div>
+            <h2 className="font-['Outfit'] font-black text-2xl text-foreground">
+              Queue is 100% Clean
+            </h2>
+            <p className="text-sm text-muted-foreground font-['Inter']">
+              There are currently no ad campaigns awaiting review. All submitted campaigns are active.
+            </p>
+            <div className="pt-2">
+              <PrimaryBtn onClick={() => onNavigate('admin')}>
+                Back to Admin Dashboard
+              </PrimaryBtn>
             </div>
           </div>
-          <div className="rounded-2xl border border-black/8 bg-card p-5">
-            <div className="font-['Outfit'] font-semibold text-sm text-foreground mb-3">
-              Ad Creative Details
-            </div>
-            <div className="space-y-2">
-              {[
-                ['Format', 'Static Image · JPG · 1200×628px'],
-                ['File Size', '842 KB'],
-                ['Color Profile', 'sRGB'],
-                ['Destination URL', 'https://chennaipizzaco.in/order'],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-xs text-muted-foreground font-['JetBrains_Mono']">{k}</span>
-                  <span className="text-xs text-foreground font-['Outfit']">{v}</span>
+        ) : (
+          <div className="grid grid-cols-2 gap-8">
+            {/* Creative preview */}
+            <div>
+              <div className="rounded-2xl border border-black/8 bg-card overflow-hidden mb-4">
+                <div className="aspect-video bg-[#EDF0F8] relative">
+                  <CreativeImage campaign={currentCampaign} sizes="(max-width: 1200px) 50vw, 600px" />
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              </div>
 
-        {/* Review panel */}
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-black/8 bg-card p-6">
-            <h3 className="font-['Outfit'] font-bold text-lg text-foreground mb-5">
-              Ad Information
-            </h3>
-            <div className="space-y-2.5">
-              {[
-                ['Advertiser', 'Priya Subramanian'],
-                ['Business Name', 'Chennai Pizza Co.'],
-                ['Campaign', 'Weekend Special Offer'],
-                ['Canvas', 'Chennai Main Canvas · Zone B'],
-                ['City', 'Chennai, Tamil Nadu'],
-                ['Rental Duration', '30 Days'],
-                ['Start Date', '25 July 2025'],
-                ['Expiry Date', '24 August 2025'],
-                ['CTA Type', 'Order Now → chennaipizzaco.in'],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex justify-between py-1.5 border-b border-black/4 last:border-0"
-                >
-                  <span className="text-sm text-muted-foreground font-['JetBrains_Mono']">{k}</span>
-                  <span className="text-sm text-foreground font-['Outfit'] font-medium">{v}</span>
+              <div className="rounded-2xl border border-black/8 bg-card p-5">
+                <div className="font-['Outfit'] font-semibold text-sm text-foreground mb-3">
+                  Creative Specs
                 </div>
-              ))}
+                <div className="space-y-2">
+                  {[
+                    ['Campaign ID', `#${currentCampaign.id}`],
+                    ['Brand', currentCampaign.brandName],
+                    ['Dimensions', `${currentCampaign.width} × ${currentCampaign.height} px`],
+                    ['Call to Action', currentCampaign.callToAction || 'Visit Website'],
+                    ['Status', currentCampaign.status],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between">
+                      <span className="text-xs text-muted-foreground font-['JetBrains_Mono']">{k}</span>
+                      <span className="text-xs text-foreground font-['Outfit'] font-semibold">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Checklist */}
-          <div className="rounded-2xl border border-black/8 bg-card p-6">
-            <h3 className="font-['Outfit'] font-bold text-base text-foreground mb-4">
-              Moderation Checklist
-            </h3>
-            {[
-              {
-                label: 'Creative Quality',
-                status: 'pass',
-                note: 'Clear, high-res image meets minimum requirements',
-              },
-              { label: 'Content Policy', status: 'pass', note: 'No prohibited content detected' },
-              {
-                label: 'Destination URL',
-                status: 'pass',
-                note: 'URL resolves and loads correctly',
-              },
-              {
-                label: 'Business Information',
-                status: 'review',
-                note: 'GST number not provided — verify manually',
-              },
-            ].map(({ label, status, note }) => (
-              <div
-                key={label}
-                className="flex items-start gap-3 py-2.5 border-b border-black/4 last:border-0"
-              >
-                <div
-                  className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${status === 'pass' ? 'bg-[#00A882]/15' : 'bg-amber-500/15'}`}
-                >
-                  {status === 'pass' ? (
-                    <Check size={11} className="text-[#00A882]" />
-                  ) : (
-                    <AlertTriangle size={10} className="text-amber-400" />
-                  )}
-                </div>
-                <div>
-                  <div className="text-sm font-['Outfit'] font-semibold text-foreground">
-                    {label}
+            {/* Review actions panel */}
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-black/8 bg-card p-6">
+                <h3 className="font-['Outfit'] font-bold text-lg text-foreground mb-4">
+                  Review & Decision
+                </h3>
+
+                {statusMessage && (
+                  <div
+                    className={`p-3 rounded-xl mb-4 text-xs font-['Outfit'] font-semibold flex items-center gap-2 ${
+                      statusMessage.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}
+                  >
+                    {statusMessage.text}
                   </div>
-                  <div className="text-xs text-muted-foreground font-['Inter'] mt-0.5">{note}</div>
+                )}
+
+                <div className="space-y-3 mb-6">
+                  <div>
+                    <label className="text-xs font-['Outfit'] font-semibold text-muted-foreground block mb-1">
+                      Ad Headline
+                    </label>
+                    <div className="text-sm font-['Outfit'] font-bold text-foreground">
+                      {currentCampaign.headline || currentCampaign.name}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-['Outfit'] font-semibold text-muted-foreground block mb-1">
+                      Ad Description
+                    </label>
+                    <div className="text-xs font-['Inter'] text-muted-foreground leading-relaxed">
+                      {currentCampaign.description || 'No description provided.'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-xs font-['Outfit'] font-semibold text-muted-foreground block mb-1.5">
+                    Feedback / Rejection Reason (Required if rejecting)
+                  </label>
+                  <input
+                    type="text"
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="e.g. Please use a higher resolution creative image"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-black/2 text-xs font-['Inter'] outline-none focus:border-[#6C5FE6]"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => handleModeration('approve')}
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 rounded-xl bg-[#00A882] hover:bg-[#008f6e] text-white text-xs font-['Outfit'] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <Check size={16} /> Approve & Publish Live
+                  </button>
+                  <button
+                    onClick={() => handleModeration('reject')}
+                    disabled={isSubmitting || !rejectReason.trim()}
+                    className="flex-1 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-['Outfit'] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <X size={16} /> Reject with Feedback
+                  </button>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-
-          {/* Status Message */}
-          {statusMessage && (
-            <div
-              className={`p-4 rounded-xl text-sm font-['Outfit'] font-semibold mb-4 ${
-                statusMessage.type === 'success'
-                  ? 'bg-[#00A882]/10 border border-[#00A882]/20 text-[#00A882]'
-                  : 'bg-[#E03E4D]/10 border border-[#E03E4D]/20 text-[#E03E4D]'
-              }`}
-            >
-              {statusMessage.text}
-            </div>
-          )}
-
-          {/* Actions */}
-          {action === 'reject' ? (
-            <div className="rounded-2xl border border-[#E03E4D]/20 bg-[#E03E4D]/5 p-5">
-              <div className="font-['Outfit'] font-semibold text-sm text-foreground mb-3">
-                Rejection Reason (required)
-              </div>
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Explain why this ad is being rejected..."
-                rows={3}
-                className="w-full bg-[#EDF0F8] border border-black/8 rounded-xl px-4 py-3 text-sm font-['Outfit'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#E03E4D]/40 resize-none mb-3"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setAction(null)}
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl border border-black/8 text-sm font-['Outfit'] text-muted-foreground hover:text-foreground transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleModeration('reject')}
-                  disabled={isSubmitting || !rejectReason.trim()}
-                  className="flex-1 py-2.5 rounded-xl bg-[#E03E4D] text-white text-sm font-['Outfit'] font-semibold hover:bg-[#E03E4D] disabled:opacity-50 transition-all"
-                >
-                  {isSubmitting ? 'Sending...' : 'Send Rejection'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleModeration('approve')}
-                disabled={isSubmitting}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#00A882] text-[#07080F] font-['Outfit'] font-bold text-sm hover:bg-[#00B891] disabled:opacity-50 transition-all"
-              >
-                <Check size={16} /> {isSubmitting ? 'Processing...' : 'Approve Ad'}
-              </button>
-              <button
-                onClick={() => handleModeration('flag')}
-                disabled={isSubmitting}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#6C5FE6]/30 text-[#6C5FE6] font-['Outfit'] font-bold text-sm hover:bg-[#6C5FE6]/10 disabled:opacity-50 transition-all"
-              >
-                <Edit2 size={14} /> Request Changes
-              </button>
-              <button
-                onClick={() => setAction('reject')}
-                disabled={isSubmitting}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#E03E4D]/30 text-[#E03E4D] font-['Outfit'] font-bold text-sm hover:bg-[#E03E4D]/10 disabled:opacity-50 transition-all"
-              >
-                <X size={16} /> Reject Ad
-              </button>
-              <button
-                onClick={() => onNavigate('admin')}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-black/8 text-muted-foreground font-['Outfit'] font-bold text-sm hover:text-foreground hover:border-black/12 transition-all"
-              >
-                <Shield size={14} /> Exit Review
-              </button>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   )
 }
-

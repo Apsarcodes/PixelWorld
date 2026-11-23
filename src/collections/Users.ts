@@ -88,6 +88,22 @@ export const Users: CollectionConfig = {
       ],
       required: true,
     },
+    {
+      name: 'role',
+      type: 'select',
+      defaultValue: 'user',
+      options: [
+        { label: 'User', value: 'user' },
+        { label: 'Admin', value: 'admin' },
+      ],
+      required: true,
+      saveToJWT: true,
+      access: {
+        create: () => true,
+        read: () => true,
+        update: ({ req }) => req.user?.role === 'admin' || req.user?.collection === 'admins',
+      },
+    },
     { name: 'company', type: 'text' },
     {
       name: 'defaultOrganization',

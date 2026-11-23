@@ -18,6 +18,7 @@ export type AppUser = {
   lastName?: string | null
   phone?: string | null
   accountType: 'advertiser' | 'business' | 'agency'
+  role: 'admin' | 'user'
   company?: string | null
   onboardingGoal?: string | null
 }
@@ -33,6 +34,7 @@ function toAppUser(user: Record<string, unknown>): AppUser {
       user.accountType === 'business' || user.accountType === 'agency'
         ? user.accountType
         : 'advertiser',
+    role: user.role === 'admin' ? 'admin' : 'user',
     company: typeof user.company === 'string' ? user.company : null,
     onboardingGoal: typeof user.onboardingGoal === 'string' ? user.onboardingGoal : null,
   }
@@ -76,8 +78,9 @@ export function createAppAuth() {
     async issueSessionForUser(user: { id: string | number; email: string; [key: string]: unknown }) {
       const secret =
         process.env.PAYLOAD_SECRET || 'dev_insecure_payload_secret_must_be_changed_in_prod_32bytes'
+      const userRole = user.role === 'admin' ? 'admin' : 'user'
       const { exp, token } = await jwtSign({
-        fieldsToSign: { id: user.id, collection: 'users', email: user.email },
+        fieldsToSign: { id: user.id, collection: 'users', email: user.email, role: userRole },
         secret,
         tokenExpiration: SESSION_SECONDS,
       })

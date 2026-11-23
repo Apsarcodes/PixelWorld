@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { ArrowLeft, Filter, Layers, X, Loader2 } from 'lucide-react'
 import type { Screen, CanvasTile } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
-import { TILES } from '@/data/mock-data'
 
 export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
-  const [tiles, setTiles] = useState<CanvasTile[]>(TILES)
+  const [tiles, setTiles] = useState<CanvasTile[]>([])
   const [selectedTile, setSelectedTile] = useState<CanvasTile | null>(null)
   const [filterStatus, setFilterStatus] = useState('all')
   const [isLoading, setIsLoading] = useState(false)

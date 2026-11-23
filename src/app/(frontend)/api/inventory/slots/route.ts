@@ -1,7 +1,28 @@
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { getPayloadClient } from '@/lib/payload'
-import { TILES, normalizeCategory } from '@/data/mock-data'
 import type { CanvasTile } from '@/types/pixelworld'
+
+function generateAvailableGrid(city: string): CanvasTile[] {
+  const slots: CanvasTile[] = []
+  let id = 1
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 10; c++) {
+      slots.push({
+        id: id++,
+        x: c * 260 + 80,
+        y: r * 220 + 80,
+        w: 180,
+        h: 160,
+        type: 'available',
+        price: 299,
+        size: 'medium',
+        location: `${city}, India`,
+        category: 'General',
+      })
+    }
+  }
+  return slots
+}
 
 export async function GET(request: Request) {
   try {
@@ -16,10 +37,12 @@ export async function GET(request: Request) {
     const category = searchParams.get('category') || 'All'
     const statusFilter = searchParams.get('status') || 'all'
 
-    let tiles: CanvasTile[] = [...TILES]
+    let tiles: CanvasTile[] = generateAvailableGrid(city)
 
     try {
       const payload = await getPayloadClient()
+
+      // 1. Fetch real inventory slots from DB
       const dbSlots = await payload.find({
         collection: 'inventory-slots' as any,
         limit: 200,
@@ -27,22 +50,22 @@ export async function GET(request: Request) {
       })
 
       if (dbSlots.docs.length > 0) {
-        tiles = dbSlots.docs.map((doc: any) => {
+        tiles = dbSlots.docs.map((doc: any, index: number) => {
           const isAd = doc.status === 'occupied' || Boolean(doc.activeCampaign)
           return {
-            id: doc.id,
-            x: doc.x,
-            y: doc.y,
-            w: doc.width,
-            h: doc.height,
+            id: Number(doc.id) || index + 1,
+            x: doc.x ?? (index % 10) * 260 + 80,
+            y: doc.y ?? Math.floor(index / 10) * 220 + 80,
+            w: doc.width ?? 180,
+            h: doc.height ?? 160,
             type: isAd ? ('ad' as const) : ('available' as const),
-            brand: doc.brandName || (isAd ? 'Sponsored' : undefined),
+            brand: doc.brandName || (isAd ? 'Live Campaign' : undefined),
             tagline: doc.tagline,
             color: doc.color || '#6C5FE6',
             textColor: '#fff',
             emoji: doc.emoji || (isAd ? '📢' : undefined),
-            views: doc.views || '10K',
-            clicks: doc.clicks || '500',
+            views: doc.views || '0',
+            clicks: doc.clicks || '0',
             category: doc.category || 'General',
             adTitle: doc.brandName ? `${doc.brandName} Promotion` : undefined,
             location: `${city}, India`,
@@ -53,40 +76,63 @@ export async function GET(request: Request) {
           }
         })
       }
+
+      // 2. Fetch real active campaigns and overlay onto the first slots
+      const liveCampaigns = await payload.find({
+        collection: 'campaigns',
+        where: { status: { equals: 'published' } },
+        limit: 20,
+        depth: 1,
+      })
+
+      if (liveCampaigns.docs.length > 0) {
+        liveCampaigns.docs.forEach((campaign: any, idx: number) => {
+          if (tiles[idx]) {
+            tiles[idx] = {
+              ...tiles[idx],
+              type: 'ad',
+              brand: campaign.brandName || campaign.name,
+              adTitle: campaign.headline || campaign.name,
+              tagline: campaign.description || campaign.callToAction,
+              color: '#6C5FE6',
+              textColor: '#fff',
+              emoji: '🚀',
+              views: '12.4K',
+              clicks: '840',
+              category: 'General',
+            }
+          }
+        })
+      }
     } catch {
-      // Fall back to canonical tiles dataset
+      // Keep dynamic clean available grid
     }
 
     // Apply category filter
+    let filtered = tiles
     if (category !== 'All') {
-      tiles = tiles.filter((t) => {
-        if (t.type !== 'ad') return true
-        return normalizeCategory(t.category) === category
-      })
+      filtered = filtered.filter(
+        (t) => t.type === 'available' || t.category?.toLowerCase() === category.toLowerCase(),
+      )
     }
 
     // Apply status filter
     if (statusFilter === 'available') {
-      tiles = tiles.filter((t) => t.type === 'available')
-    } else if (statusFilter === 'ad') {
-      tiles = tiles.filter((t) => t.type === 'ad')
+      filtered = filtered.filter((t) => t.type === 'available')
+    } else if (statusFilter === 'active' || statusFilter === 'ad') {
+      filtered = filtered.filter((t) => t.type === 'ad')
     }
-
-    const totalAds = tiles.filter((t) => t.type === 'ad').length
-    const totalAvailable = tiles.filter((t) => t.type === 'available').length
 
     return Response.json({
       ok: true,
       city,
-      tiles,
-      stats: {
-        total: tiles.length,
-        ads: totalAds,
-        available: totalAvailable,
-      },
+      tiles: filtered,
+      total: filtered.length,
+      adCount: filtered.filter((t) => t.type === 'ad').length,
+      availableCount: filtered.filter((t) => t.type === 'available').length,
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch inventory slots'
+    const message = error instanceof Error ? error.message : 'Failed to load inventory slots'
     return Response.json({ error: message }, { status: 500 })
   }
 }

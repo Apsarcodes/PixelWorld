@@ -5,6 +5,7 @@ export type AppUser = {
   lastName?: string | null
   phone?: string | null
   accountType: 'advertiser' | 'business' | 'agency'
+  role: 'admin' | 'user'
   company?: string | null
   onboardingGoal?: string | null
 }

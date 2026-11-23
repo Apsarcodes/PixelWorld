@@ -20,7 +20,6 @@ import {
 import type { Screen } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge, StatCard } from '@/components/common/UIComponents'
 import { WorldMap } from '@/components/common/WorldMap'
-import { TILES } from '@/data/mock-data'
 
 export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   const [navOpen, setNavOpen] = useState(false)

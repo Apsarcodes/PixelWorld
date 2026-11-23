@@ -14,9 +14,8 @@ import {
   Star,
   Loader2,
 } from 'lucide-react'
-import type { Screen } from '@/types/pixelworld'
+import type { Screen, CityCard } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge, StatCard } from '@/components/common/UIComponents'
-import { INDIA_CITIES } from '@/data/mock-data'
 
 export function CountryScreen({
   onNavigate,
@@ -25,7 +24,7 @@ export function CountryScreen({
   onNavigate: (s: Screen) => void
   onSelectCity?: (city: string) => void
 }) {
-  const [cities, setCities] = useState(INDIA_CITIES)
+  const [cities, setCities] = useState<CityCard[]>([])
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 

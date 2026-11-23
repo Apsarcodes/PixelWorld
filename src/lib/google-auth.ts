@@ -101,6 +101,8 @@ export async function exchangeGoogleCodeForProfile(
 export async function upsertGoogleAccount(profile: GoogleUserProfile) {
   const payload = await getPayloadClient()
   const email = profile.email.toLowerCase().trim()
+  const adminEmails = ['mohamedapsarasif761@gmail.com', 'apsarcodes@gmail.com']
+  const assignedRole: 'admin' | 'user' = adminEmails.includes(email) ? 'admin' : 'user'
 
   // 1. Check if user already exists
   const existing = await payload.find({
@@ -124,9 +126,17 @@ export async function upsertGoogleAccount(profile: GoogleUserProfile) {
         firstName: profile.firstName || 'User',
         lastName: profile.lastName || '',
         accountType: 'advertiser',
+        role: assignedRole,
         status: 'active',
         termsAcceptedAt: new Date().toISOString(),
       },
+    })
+  } else if (assignedRole === 'admin' && (userDoc as any).role !== 'admin') {
+    userDoc = await payload.update({
+      collection: 'users',
+      id: userDoc.id,
+      overrideAccess: true,
+      data: { role: 'admin' },
     })
   }
 

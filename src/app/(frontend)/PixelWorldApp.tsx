@@ -93,11 +93,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       return
     }
 
-    const isAdmin =
-      currentUser.email?.includes('admin') ||
-      (currentUser as any).role === 'admin' ||
-      (currentUser as any).accountType === 'admin' ||
-      (currentUser as any).collection === 'admins'
+    const isAdmin = currentUser.role === 'admin'
 
     if (
       (nextScreen === 'admin' ||
@@ -163,9 +159,14 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       )}
       {screen === 'checkout' && <CheckoutScreen onNavigate={nav} campaign={activeCampaign} />}
       {screen === 'dashboard' && (
-        <DashboardScreen onNavigate={nav} campaigns={campaigns} onOpenCampaign={openCampaign} />
+        <DashboardScreen
+          onNavigate={nav}
+          campaigns={campaigns}
+          onOpenCampaign={openCampaign}
+          user={currentUser}
+        />
       )}
-      {screen === 'expiring' && <ExpiringAdScreen onNavigate={nav} />}
+      {screen === 'expiring' && <ExpiringAdScreen onNavigate={nav} campaigns={campaigns} />}
       {screen === 'admin' && <AdminDashboard onNavigate={nav} />}
       {screen === 'admin-mod' && <AdminModeration onNavigate={nav} />}
       {screen === 'admin-canvas' && <AdminCanvasScreen onNavigate={nav} />}
