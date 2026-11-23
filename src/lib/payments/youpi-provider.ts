@@ -72,6 +72,10 @@ export class YoupiPaymentProvider implements PaymentProvider {
 
       if (res.ok) {
         const data = await res.json()
+        const merchantVpa = process.env.YOUPI_MERCHANT_VPA || 'pixelworld@upi'
+        const upiIntentUrl =
+          data.upiIntentUrl ||
+          `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWorld Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWorld Ad Booking')}&cu=INR`
         return {
           paymentId: data.paymentId || data.id,
           orderId: data.orderId || params.orderId,
@@ -80,6 +84,8 @@ export class YoupiPaymentProvider implements PaymentProvider {
           currency: data.currency || 'INR',
           status: this.mapStatus(data.status),
           checkoutUrl: data.checkoutUrl || `${this.apiUrl}/checkout/${data.paymentId}`,
+          upiIntentUrl,
+          upiQrString: data.upiQrString || upiIntentUrl,
         }
       }
     } catch {
@@ -87,6 +93,8 @@ export class YoupiPaymentProvider implements PaymentProvider {
       // generate a standard development sandbox checkout simulation.
       if (process.env.NODE_ENV !== 'production') {
         const simulatedPaymentId = `youpi_${crypto.randomBytes(8).toString('hex')}`
+        const merchantVpa = process.env.YOUPI_MERCHANT_VPA || 'pixelworld.test@upi'
+        const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWorld Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWorld Ad Booking')}&cu=INR`
         return {
           paymentId: simulatedPaymentId,
           orderId: params.orderId,
@@ -95,6 +103,8 @@ export class YoupiPaymentProvider implements PaymentProvider {
           currency: params.currency || 'INR',
           status: 'pending',
           checkoutUrl: `${params.returnUrl}${params.returnUrl.includes('?') ? '&' : '?'}paymentId=${simulatedPaymentId}&orderId=${params.orderId}&sandbox=1`,
+          upiIntentUrl,
+          upiQrString: upiIntentUrl,
         }
       }
       throw new Error(`YouPI-PG server connection failed at ${this.apiUrl}`)

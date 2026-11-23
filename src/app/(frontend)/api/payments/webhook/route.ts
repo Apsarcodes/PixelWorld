@@ -11,9 +11,17 @@ export async function POST(request: Request) {
     }
 
     const rawBody = await request.text()
-    const signatureHeader = request.headers.get('x-gateway-signature') || ''
-    const timestampHeader = request.headers.get('x-gateway-timestamp')
-    const deliveryId = request.headers.get('x-gateway-delivery-id')
+    const signatureHeader =
+      request.headers.get('x-youpi-signature') ||
+      request.headers.get('x-gateway-signature') ||
+      request.headers.get('x-signature') ||
+      ''
+    const timestampHeader =
+      request.headers.get('x-youpi-timestamp') ||
+      request.headers.get('x-gateway-timestamp')
+    const deliveryId =
+      request.headers.get('x-youpi-delivery-id') ||
+      request.headers.get('x-gateway-delivery-id')
 
     if (!signatureHeader) {
       return Response.json({ error: 'Missing webhook signature header' }, { status: 401 })

@@ -35,6 +35,8 @@ export interface PaymentOrderResult {
   currency: string
   status: PaymentStatus
   checkoutUrl: string
+  upiIntentUrl?: string
+  upiQrString?: string
 }
 
 export interface PaymentVerificationResult {

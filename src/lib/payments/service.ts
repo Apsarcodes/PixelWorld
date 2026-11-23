@@ -20,6 +20,8 @@ export interface BookingOrderResult {
   orderId: string
   paymentId: string
   checkoutUrl: string
+  upiIntentUrl?: string
+  upiQrString?: string
   amount: number
   subtotal: number
   gstAmount: number
@@ -89,6 +91,8 @@ export class PaymentService {
       orderId,
       paymentId: orderResult.paymentId,
       checkoutUrl: orderResult.checkoutUrl,
+      upiIntentUrl: orderResult.upiIntentUrl,
+      upiQrString: orderResult.upiQrString,
       amount: totalAmount,
       subtotal,
       gstAmount,
