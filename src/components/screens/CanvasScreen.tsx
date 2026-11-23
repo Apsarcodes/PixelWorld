@@ -9,10 +9,12 @@ import { CELL, CANVAS_W, CANVAS_H, TILES, FILTER_CATEGORIES, normalizeCategory }
 
 export function CanvasScreen({
   onNavigate,
+  selectedCity = 'chennai',
   campaigns,
   onCampaignSaved,
 }: {
   onNavigate: (s: Screen) => void
+  selectedCity?: string
   campaigns: StoredCampaign[]
   onCampaignSaved: (campaign: StoredCampaign) => void
 }) {
@@ -38,10 +40,14 @@ export function CanvasScreen({
   const canvasRef = useRef<HTMLDivElement>(null)
   const persistedCampaign = campaigns[0] ?? null
 
+  const formattedCity =
+    (selectedCity || 'Chennai').charAt(0).toUpperCase() + (selectedCity || 'Chennai').slice(1)
+
   useEffect(() => {
     let isMounted = true
     setIsLoadingSlots(true)
-    fetch('/api/inventory/slots?city=Chennai')
+    const targetCity = selectedCity || 'chennai'
+    fetch(`/api/inventory/slots?city=${encodeURIComponent(targetCity)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isMounted && data?.tiles && data.tiles.length > 0) {
@@ -55,7 +61,7 @@ export function CanvasScreen({
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [selectedCity])
 
   const adTilesByCategory = React.useMemo(() => {
     const counts: Record<string, number> = { All: 0 }
@@ -152,9 +158,12 @@ export function CanvasScreen({
             India
           </button>
           <ChevronRight size={12} />
-          <button className="hover:text-foreground">Tamil Nadu</button>
-          <ChevronRight size={12} />
-          <span className="text-foreground font-semibold">Chennai</span>
+          <span className="text-foreground font-semibold">{formattedCity}</span>
+          {isLoadingSlots && (
+            <span className="text-xs text-[#6C5FE6] font-['JetBrains_Mono'] animate-pulse ml-1">
+              (syncing...)
+            </span>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-3">
           <div className="relative">
@@ -453,7 +462,7 @@ export function CanvasScreen({
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F5F7FC]/90 backdrop-blur-sm border border-black/8">
             <div className="w-2 h-2 rounded-full bg-[#00A882] animate-pulse" />
             <span className="text-xs font-['JetBrains_Mono'] text-foreground">
-              Chennai Main Canvas
+              {formattedCity} Main Canvas
             </span>
           </div>
           <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[#F5F7FC]/90 backdrop-blur-sm border border-black/8">

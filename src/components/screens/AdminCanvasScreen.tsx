@@ -1,12 +1,33 @@
-import React, { useState } from 'react'
-import { ArrowLeft, Filter, Layers, X } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { ArrowLeft, Filter, Layers, X, Loader2 } from 'lucide-react'
 import type { Screen, CanvasTile } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { TILES } from '@/data/mock-data'
 
 export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+  const [tiles, setTiles] = useState<CanvasTile[]>(TILES)
   const [selectedTile, setSelectedTile] = useState<CanvasTile | null>(null)
   const [filterStatus, setFilterStatus] = useState('all')
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    setIsLoading(true)
+    fetch('/api/inventory/slots?city=chennai')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.tiles && data.tiles.length > 0) {
+          setTiles(data.tiles)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const statusColors: Record<string, string> = {
     active: '#00A882',
@@ -17,8 +38,8 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
     premium: '#EC4899',
   }
 
-  const adTiles = TILES.filter((t) => t.type === 'ad')
-  const availTiles = TILES.filter((t) => t.type === 'available')
+  const adTiles = tiles.filter((t) => t.type === 'ad')
+  const availTiles = tiles.filter((t) => t.type === 'available')
 
   return (
     <div className="min-h-screen bg-[#F4F6FB]">
@@ -110,7 +131,7 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
               className="absolute inset-0"
               style={{ transform: 'scale(0.2)', transformOrigin: '0 0' }}
             >
-              {TILES.map((tile) => (
+              {tiles.map((tile) => (
                 <div
                   key={tile.id}
                   className="absolute rounded cursor-pointer hover:opacity-80 transition-opacity"

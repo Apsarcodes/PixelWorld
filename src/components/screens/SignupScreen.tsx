@@ -183,9 +183,11 @@ export function SignupScreen({
             </div>
 
             <button
-              disabled
-              title="Google sign-up is not configured"
-              className="w-full flex items-center justify-center gap-3 border border-black/10 bg-white rounded-2xl px-5 py-3 text-sm font-['Outfit'] font-semibold text-muted-foreground opacity-60 cursor-not-allowed mb-5"
+              type="button"
+              onClick={() => {
+                window.location.href = '/api/app-auth/google'
+              }}
+              className="w-full flex items-center justify-center gap-3 border border-black/10 bg-white hover:bg-slate-50 hover:border-[#6C5FE6]/40 transition-all shadow-sm rounded-2xl px-5 py-3 text-sm font-['Outfit'] font-semibold text-foreground cursor-pointer mb-5"
             >
               <GoogleIcon /> Sign up with Google
             </button>

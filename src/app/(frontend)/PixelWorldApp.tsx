@@ -20,6 +20,7 @@ import { UserProfileScreen } from '@/components/screens/UserProfileScreen'
 export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | null }) {
   const [screen, setScreen] = useState<Screen>('login')
   const [currentUser, setCurrentUser] = useState<AppUser | null>(initialUser)
+  const [selectedCity, setSelectedCity] = useState<string>('chennai')
   const [campaigns, setCampaigns] = useState<StoredCampaign[]>([])
   const [activeCampaign, setActiveCampaign] = useState<StoredCampaign | null>(null)
 
@@ -119,10 +120,19 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
   return (
     <div key={screen} className="w-full">
       {screen === 'landing' && <LandingScreen onNavigate={nav} />}
-      {screen === 'country' && <CountryScreen onNavigate={nav} />}
+      {screen === 'country' && (
+        <CountryScreen
+          onNavigate={nav}
+          onSelectCity={(city) => {
+            setSelectedCity(city)
+            nav('canvas')
+          }}
+        />
+      )}
       {screen === 'canvas' && (
         <CanvasScreen
           onNavigate={nav}
+          selectedCity={selectedCity}
           campaigns={campaigns}
           onCampaignSaved={handleCampaignSaved}
         />

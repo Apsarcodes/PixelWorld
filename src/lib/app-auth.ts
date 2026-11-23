@@ -1,6 +1,8 @@
 import 'server-only'
 
+import crypto from 'crypto'
 import { cookies } from 'next/headers'
+import { jwtSign } from 'payload'
 import { getPayloadClient } from '@/lib/payload'
 import type { User } from '@/payload-types'
 
@@ -39,15 +41,17 @@ function toAppUser(user: Record<string, unknown>): AppUser {
 async function setSessionCookie(token: string, exp?: number) {
   const store = await cookies()
   const embeddedPreview = isEmbeddedPreviewRuntime()
-  store.set(APP_SESSION_COOKIE, token, {
+  const options = {
     httpOnly: true,
-    sameSite: embeddedPreview ? 'none' : 'lax',
+    sameSite: embeddedPreview ? ('none' as const) : ('lax' as const),
     secure: embeddedPreview || process.env.NODE_ENV === 'production',
     partitioned: embeddedPreview,
-    priority: 'high',
+    priority: 'high' as const,
     path: '/',
     maxAge: exp ? Math.max(1, exp - Math.floor(Date.now() / 1000)) : SESSION_SECONDS,
-  })
+  }
+  store.set(APP_SESSION_COOKIE, token, options)
+  store.set('payload-token', token, options)
 }
 
 export function createAppAuth() {
@@ -66,6 +70,21 @@ export function createAppAuth() {
       return {
         user: toAppUser(result.user as unknown as Record<string, unknown>),
         token: result.token,
+      }
+    },
+
+    async issueSessionForUser(user: { id: string | number; email: string; [key: string]: unknown }) {
+      const secret =
+        process.env.PAYLOAD_SECRET || 'dev_insecure_payload_secret_must_be_changed_in_prod_32bytes'
+      const { exp, token } = await jwtSign({
+        fieldsToSign: { id: user.id, collection: 'users', email: user.email },
+        secret,
+        tokenExpiration: SESSION_SECONDS,
+      })
+      await setSessionCookie(token, exp)
+      return {
+        user: toAppUser(user as unknown as Record<string, unknown>),
+        token,
       }
     },
 
@@ -107,9 +126,47 @@ export function createAppAuth() {
 
       for (const token of tokens) {
         try {
-          const authHeaders = new Headers({ Authorization: `JWT ${token}` })
-          const { user } = await payload.auth({ headers: authHeaders })
+          let user: (User & { collection: 'users' }) | null = null
+          try {
+            const authHeaders = new Headers({ Authorization: `JWT ${token}` })
+            const authRes = await payload.auth({ headers: authHeaders })
+            if (authRes?.user && authRes.user.collection === 'users') {
+              user = authRes.user as any
+            }
+          } catch {
+            // fallback to direct verification below
+          }
+
+          if (!user) {
+            const secret =
+              process.env.PAYLOAD_SECRET ||
+              'dev_insecure_payload_secret_must_be_changed_in_prod_32bytes'
+            const [headerB64, payloadB64, signatureB64] = token.split('.')
+            if (headerB64 && payloadB64 && signatureB64) {
+              const expectedSig = crypto
+                .createHmac('sha256', secret)
+                .update(`${headerB64}.${payloadB64}`)
+                .digest('base64url')
+              if (signatureB64 === expectedSig) {
+                const decoded = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'))
+                const now = Math.floor(Date.now() / 1000)
+                if ((!decoded.exp || decoded.exp > now) && decoded.collection === 'users' && decoded.id) {
+                  const fetched = await payload.findByID({
+                    collection: 'users',
+                    id: decoded.id as string | number,
+                    overrideAccess: true,
+                    depth: 0,
+                  })
+                  if (fetched) {
+                    user = { ...fetched, collection: 'users' } as any
+                  }
+                }
+              }
+            }
+          }
+
           if (!user || user.collection !== 'users') continue
+
           const hydratedUser = await payload.findByID({
             collection: 'users',
             id: user.id,
@@ -117,9 +174,9 @@ export function createAppAuth() {
             user,
             depth: 0,
           })
-          return { ...hydratedUser, collection: 'users' }
+          return { ...(hydratedUser || user), collection: 'users' }
         } catch {
-          // Try the preview JWT when a stale browser cookie cannot be validated.
+          // Token invalid or expired
         }
       }
 

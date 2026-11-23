@@ -18,7 +18,13 @@ import type { Screen } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge, StatCard } from '@/components/common/UIComponents'
 import { INDIA_CITIES } from '@/data/mock-data'
 
-export function CountryScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+export function CountryScreen({
+  onNavigate,
+  onSelectCity,
+}: {
+  onNavigate: (s: Screen) => void
+  onSelectCity?: (city: string) => void
+}) {
   const [cities, setCities] = useState(INDIA_CITIES)
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -137,7 +143,13 @@ export function CountryScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
             <div
               key={city.name}
               className="rounded-2xl border border-black/6 bg-card hover:border-[#6C5FE6]/30 hover:bg-[#6C5FE6]/5 transition-all cursor-pointer group p-6"
-              onClick={() => onNavigate('canvas')}
+              onClick={() => {
+                if (onSelectCity) {
+                  onSelectCity(city.slug || city.name.toLowerCase())
+                } else {
+                  onNavigate('canvas')
+                }
+              }}
             >
               <div className="text-3xl mb-4">{city.icon}</div>
               <h3 className="font-['Outfit'] font-bold text-xl text-foreground mb-4">
