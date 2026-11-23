@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Smartphone,
   X,
-  Zap,
 } from 'lucide-react'
 import type { Screen, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
@@ -32,7 +31,6 @@ export function CheckoutScreen({
   const [error, setError] = useState('')
   const [paymentSuccess, setPaymentSuccess] = useState(false)
   const [showUpiModal, setShowUpiModal] = useState(false)
-  const [simulating, setSimulating] = useState(false)
   const [countdown, setCountdown] = useState(15 * 60) // 15-minute lock timer
 
   const [paymentDetails, setPaymentDetails] = useState<{
@@ -127,42 +125,6 @@ export function CheckoutScreen({
       setError(err instanceof Error ? err.message : 'Payment initiation failed. Please try again.')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleSimulatePayment = async () => {
-    if (simulating || !paymentDetails) return
-    setSimulating(true)
-
-    try {
-      const res = await fetch('/api/payments/simulate-webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...previewAuthorizationHeaders(),
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          orderId: paymentDetails.orderId,
-          paymentId: paymentDetails.paymentId,
-          amount: paymentDetails.amount,
-          campaignId: campaign?.id || 1,
-          slotId: 1,
-          durationDays: 30,
-        }),
-      })
-
-      if (res.ok) {
-        setShowUpiModal(false)
-        setPaymentSuccess(true)
-      } else {
-        const errData = await res.json()
-        setError(errData.error || 'Simulation failed.')
-      }
-    } catch (err) {
-      setError('Unable to simulate payment confirmation.')
-    } finally {
-      setSimulating(false)
     }
   }
 
@@ -460,25 +422,6 @@ export function CheckoutScreen({
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground font-['Inter'] py-2">
               <Loader2 size={13} className="animate-spin text-[#6C5FE6]" />
               <span>Awaiting payment from your UPI app...</span>
-            </div>
-
-            {/* Sandbox Simulation Button */}
-            <div className="mt-3 pt-3 border-t border-black/8">
-              <button
-                onClick={handleSimulatePayment}
-                disabled={simulating}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-['Outfit'] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                {simulating ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" /> Verifying simulation...
-                  </>
-                ) : (
-                  <>
-                    <Zap size={14} /> ⚡ Simulate Successful UPI Payment (Sandbox)
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </div>

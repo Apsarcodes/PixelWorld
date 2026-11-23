@@ -65,3 +65,4 @@ pnpm-debug.log*
 
 # Local services & sub-repositories
 YouPI-PG/
+media/

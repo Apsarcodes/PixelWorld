@@ -28,7 +28,7 @@ export function generateOAuthState(): string {
 export function getGoogleAuthorizationUrl(state: string): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   if (!isGoogleOAuthConfigured()) {
-    return `${siteUrl.replace(/\/+$/, '')}/api/app-auth/google/dev?state=${encodeURIComponent(state)}`
+    return `${siteUrl.replace(/\/+$/, '')}/?auth_error=google_oauth_credentials_missing`
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!

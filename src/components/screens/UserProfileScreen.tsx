@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Edit2, Laptop, Layers, LayoutDashboard, LogOut, Phone, Plus, Settings, Shield, Smartphone, Upload, UserCircle, Users, X } from 'lucide-react'
-import type { Screen, AppUser } from '@/types/pixelworld'
+import type { Screen, AppUser, TeamMember } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
-import { UAM_ROLES, TEAM_MEMBERS } from '@/data/mock-data'
+import { UAM_ROLES } from '@/data/mock-data'
 
 export function UserProfileScreen({
   onNavigate,
@@ -18,7 +18,18 @@ export function UserProfileScreen({
   >('profile')
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('manager')
-  const [members, setMembers] = useState(TEAM_MEMBERS)
+  const [members, setMembers] = useState<TeamMember[]>([
+    {
+      id: 1,
+      name: `${user.firstName} ${user.lastName ?? ''}`.trim() || 'Owner',
+      email: user.email,
+      role: 'owner',
+      avatar: ((user.firstName?.[0] || 'U') + (user.lastName?.[0] || '')).toUpperCase(),
+      status: 'active',
+      joined: 'Active',
+      lastActive: 'Just now',
+    },
+  ])
   const [editingMember, setEditingMember] = useState<number | null>(null)
   const [profileName, setProfileName] = useState(`${user.firstName} ${user.lastName ?? ''}`.trim())
   const [profileEmail, setProfileEmail] = useState(user.email)

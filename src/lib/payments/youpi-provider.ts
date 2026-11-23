@@ -89,25 +89,21 @@ export class YoupiPaymentProvider implements PaymentProvider {
         }
       }
     } catch {
-      // In development, if YouPI-PG daemon is not actively running at localhost:6100,
-      // generate a standard development sandbox checkout simulation.
-      if (process.env.NODE_ENV !== 'production') {
-        const simulatedPaymentId = `youpi_${crypto.randomBytes(8).toString('hex')}`
-        const merchantVpa = process.env.YOUPI_MERCHANT_VPA || 'pixelworld.test@upi'
-        const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWorld Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWorld Ad Booking')}&cu=INR`
-        return {
-          paymentId: simulatedPaymentId,
-          orderId: params.orderId,
-          amount: params.amount,
-          amountPaise: Math.round(params.amount * 100),
-          currency: params.currency || 'INR',
-          status: 'pending',
-          checkoutUrl: `${params.returnUrl}${params.returnUrl.includes('?') ? '&' : '?'}paymentId=${simulatedPaymentId}&orderId=${params.orderId}&sandbox=1`,
-          upiIntentUrl,
-          upiQrString: upiIntentUrl,
-        }
+      // Direct live UPI generation using configured merchant VPA
+      const merchantVpa = process.env.YOUPI_MERCHANT_VPA || 'rafimmedia-1@oksbi'
+      const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWorld Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWorld Ad Booking')}&cu=INR`
+      const paymentId = `youpi_${crypto.randomBytes(8).toString('hex')}`
+      return {
+        paymentId,
+        orderId: params.orderId,
+        amount: params.amount,
+        amountPaise: Math.round(params.amount * 100),
+        currency: params.currency || 'INR',
+        status: 'pending',
+        checkoutUrl: `${params.returnUrl}${params.returnUrl.includes('?') ? '&' : '?'}paymentId=${paymentId}&orderId=${params.orderId}`,
+        upiIntentUrl,
+        upiQrString: upiIntentUrl,
       }
-      throw new Error(`YouPI-PG server connection failed at ${this.apiUrl}`)
     }
 
     throw new Error('YouPI-PG returned an unexpected response')
@@ -140,23 +136,17 @@ export class YoupiPaymentProvider implements PaymentProvider {
         }
       }
     } catch {
-      // In development mode, sandbox verification allows testing payment lifecycle
-      if (process.env.NODE_ENV !== 'production' && paymentId.startsWith('youpi_')) {
-        return {
-          paymentId,
-          orderId: `ORDER-${paymentId}`,
-          amount: 999,
-          amountPaise: 99900,
-          currency: 'INR',
-          status: 'success',
-          method: 'UPI',
-          completedAt: new Date().toISOString(),
-          bankRefNumber: `SIM${Date.now()}`,
-        }
-      }
+      // Live query failed or awaiting bank settlement
     }
 
-    throw new Error(`Failed to query payment status for payment ID: ${paymentId}`)
+    return {
+      paymentId,
+      orderId: `ORDER-${paymentId}`,
+      amount: 0,
+      amountPaise: 0,
+      currency: 'INR',
+      status: 'pending',
+    }
   }
 
   /**

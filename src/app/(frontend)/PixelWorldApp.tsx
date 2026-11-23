@@ -26,6 +26,22 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
 
   useEffect(() => {
     document.documentElement.classList.remove('dark')
+
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search)
+      const authError = searchParams.get('auth_error')
+      if (authError) {
+        if (authError === 'google_oauth_credentials_missing') {
+          alert(
+            'Google OAuth credentials (GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET) need to be configured in .env.local to enable real Google Sign-In.',
+          )
+        } else {
+          alert(`Google Sign-In notice: ${decodeURIComponent(authError)}`)
+        }
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    }
+
     if (!initialUser) {
       fetch('/api/app-auth/me', {
         credentials: 'include',

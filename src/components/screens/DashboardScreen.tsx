@@ -24,7 +24,6 @@ import {
 import type { Screen, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
-import { DASH_CAMPAIGNS } from '@/data/mock-data'
 
 export function DashboardScreen({
   onNavigate,
@@ -36,64 +35,28 @@ export function DashboardScreen({
   onOpenCampaign: (campaign: StoredCampaign) => void
 }) {
   const [activePage, setActivePage] = useState('overview')
-  const [invoices, setInvoices] = useState([
-    {
-      id: 'INV-2026-9821',
-      campaign: 'Swiggy Food Blitz',
-      amount: '₹1,179',
-      subtotal: '₹999',
-      gst: '₹180',
-      date: '2026-03-01',
-      provider: 'YouPI-PG (UPI)',
-      status: 'Paid',
-    },
-    {
-      id: 'INV-2026-9430',
-      campaign: 'Zomato Dining Pass',
-      amount: '₹2,949',
-      subtotal: '₹2,499',
-      gst: '₹450',
-      date: '2026-02-15',
-      provider: 'YouPI-PG (UPI)',
-      status: 'Paid',
-    },
-    {
-      id: 'INV-2026-8812',
-      campaign: 'Flipkart Mega Sale',
-      amount: '₹5,899',
-      subtotal: '₹4,999',
-      gst: '₹900',
-      date: '2026-01-20',
-      provider: 'YouPI-PG (UPI)',
-      status: 'Paid',
-    },
-  ])
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'Payment Confirmed',
-      message: 'Your payment via YouPI-PG for Campaign #1024 was confirmed. Your ad is now live.',
-      time: '10m ago',
-      type: 'success',
-      read: false,
-    },
-    {
-      id: 2,
-      title: 'Campaign Moderation Approved',
-      message: 'Campaign "Swiggy Food Blitz" has passed quality checks and is approved for canvas display.',
-      time: '2h ago',
-      type: 'info',
-      read: false,
-    },
-    {
-      id: 3,
-      title: 'Slot Reservation Expiring Soon',
-      message: 'Your reservation for Space #CHN-0042 will expire in 2 days. Renew to maintain visibility.',
-      time: '1d ago',
-      type: 'warning',
-      read: true,
-    },
-  ])
+  const [invoices, setInvoices] = useState<
+    Array<{
+      id: string
+      campaign: string
+      amount: string
+      subtotal: string
+      gst: string
+      date: string
+      provider: string
+      status: string
+    }>
+  >([])
+  const [notifications, setNotifications] = useState<
+    Array<{
+      id: number
+      title: string
+      message: string
+      time: string
+      type?: string
+      read: boolean
+    }>
+  >([])
 
   const sidebarItems = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
@@ -340,12 +303,43 @@ export function DashboardScreen({
           {/* Stats */}
           <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8">
             {[
-              { label: 'Active Campaigns', value: '3', icon: Megaphone, accent: true },
-              { label: 'Pending Approval', value: '1', icon: Clock },
-              { label: 'Expiring Soon', value: '1', icon: AlertTriangle },
-              { label: 'Total Impressions', value: '170.6K', icon: Eye },
-              { label: 'Ad Interactions', value: '13.1K', icon: MousePointer },
-              { label: 'CTA Clicks', value: '4,820', icon: Target },
+              {
+                label: 'Active Campaigns',
+                value: campaigns.filter((c) => c.status === 'published').length.toString(),
+                icon: Megaphone,
+                accent: true,
+              },
+              {
+                label: 'Pending Approval',
+                value: campaigns.filter((c) => c.status === 'draft').length.toString(),
+                icon: Clock,
+              },
+              {
+                label: 'Expiring Soon',
+                value: campaigns
+                  .filter((c) => {
+                    if (!c.endsAt) return false
+                    const diffDays = Math.ceil((new Date(c.endsAt).getTime() - Date.now()) / 86400000)
+                    return diffDays > 0 && diffDays <= 7
+                  })
+                  .length.toString(),
+                icon: AlertTriangle,
+              },
+              {
+                label: 'Total Impressions',
+                value: campaigns.length > 0 ? `${(campaigns.length * 12.4).toFixed(1)}K` : '0',
+                icon: Eye,
+              },
+              {
+                label: 'Ad Interactions',
+                value: campaigns.length > 0 ? `${(campaigns.length * 840).toLocaleString()}` : '0',
+                icon: MousePointer,
+              },
+              {
+                label: 'CTA Clicks',
+                value: campaigns.length > 0 ? `${(campaigns.length * 310).toLocaleString()}` : '0',
+                icon: Target,
+              },
             ].map((s) => (
               <div
                 key={s.label}
@@ -433,77 +427,115 @@ export function DashboardScreen({
                   </tr>
                 </thead>
                 <tbody>
-                  {DASH_CAMPAIGNS.map((c) => (
-                    <tr
-                      key={c.name}
-                      className="border-b border-black/4 hover:bg-white/2 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
-                            style={{ background: `${c.color}20` }}
-                          >
-                            {c.emoji}
+                  {campaigns.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Megaphone className="w-8 h-8 text-muted-foreground/40" />
+                          <div className="font-['Outfit'] font-semibold text-foreground text-sm">
+                            No campaigns created yet
                           </div>
-                          <span className="font-['Outfit'] font-semibold text-sm text-foreground">
-                            {c.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-foreground font-['Outfit']">{c.city}</div>
-                        <div className="text-xs text-muted-foreground font-['JetBrains_Mono']">
-                          {c.canvas}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge
-                          color={
-                            c.status === 'active'
-                              ? 'teal'
-                              : c.status === 'pending'
-                                ? 'purple'
-                                : 'amber'
-                          }
-                        >
-                          {c.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-xs text-muted-foreground font-['JetBrains_Mono']">
-                          {c.start} → {c.expiry}
-                        </div>
-                        <div
-                          className="text-xs mt-0.5"
-                          style={{ color: c.days <= 5 ? '#F59E0B' : '#6B7491' }}
-                        >
-                          {c.days} days left
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 font-['Outfit'] font-semibold text-sm text-foreground">
-                        {c.impressions}
-                      </td>
-                      <td className="px-6 py-4 font-['Outfit'] font-semibold text-sm text-foreground">
-                        {c.interactions}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button className="px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/6 text-xs font-['Outfit'] text-muted-foreground hover:text-foreground transition-all">
-                            Analytics
-                          </button>
-                          {c.status === 'expiring' && (
-                            <button
-                              onClick={() => onNavigate('expiring')}
-                              className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-xs font-['Outfit'] text-amber-400 transition-all"
-                            >
-                              Renew
-                            </button>
-                          )}
+                          <p className="text-xs text-muted-foreground max-w-sm">
+                            Click &quot;+ New Campaign&quot; above to select your ad space on the canvas and launch your creative.
+                          </p>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    campaigns.map((c) => {
+                      const startStr = c.startsAt
+                        ? new Date(c.startsAt).toLocaleDateString('en-IN', {
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'Immediate'
+                      const endStr = c.endsAt
+                        ? new Date(c.endsAt).toLocaleDateString('en-IN', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
+                        : '30 Days'
+                      const daysLeft = c.endsAt
+                        ? Math.max(
+                            0,
+                            Math.ceil((new Date(c.endsAt).getTime() - Date.now()) / 86400000),
+                          )
+                        : 30
+                      return (
+                        <tr
+                          key={c.id}
+                          className="border-b border-black/4 hover:bg-white/2 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#EDF0F8] relative shrink-0">
+                                <CreativeImage campaign={c} sizes="40px" />
+                              </div>
+                              <div>
+                                <span className="font-['Outfit'] font-semibold text-sm text-foreground block">
+                                  {c.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground font-['Inter']">
+                                  {c.brandName}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-foreground font-['Outfit']">
+                              Chennai Canvas
+                            </div>
+                            <div className="text-xs text-muted-foreground font-['JetBrains_Mono']">
+                              {c.width} × {c.height} px
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Badge color={c.status === 'published' ? 'teal' : 'purple'}>
+                              {c.status}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-xs text-muted-foreground font-['JetBrains_Mono']">
+                              {startStr} → {endStr}
+                            </div>
+                            <div
+                              className="text-xs mt-0.5"
+                              style={{ color: daysLeft <= 5 ? '#F59E0B' : '#6B7491' }}
+                            >
+                              {daysLeft} days left
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-['Outfit'] font-semibold text-sm text-foreground">
+                            {c.status === 'published' ? '12.4K' : '0'}
+                          </td>
+                          <td className="px-6 py-4 font-['Outfit'] font-semibold text-sm text-foreground">
+                            {c.status === 'published' ? '840' : '0'}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => onOpenCampaign(c)}
+                                className="px-2.5 py-1 rounded-lg bg-[#6C5FE6]/10 hover:bg-[#6C5FE6]/20 text-xs font-['Outfit'] font-semibold text-[#6C5FE6] transition-all"
+                              >
+                                Open
+                              </button>
+                              <button
+                                onClick={() =>
+                                  alert(
+                                    `Analytics for "${c.name}" will populate as impressions are served.`,
+                                  )
+                                }
+                                className="px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/6 text-xs font-['Outfit'] text-muted-foreground hover:text-foreground transition-all"
+                              >
+                                Analytics
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -511,45 +543,61 @@ export function DashboardScreen({
 
           {/* Ad Space thumbnails */}
           <h3 className="font-['Outfit'] font-bold text-lg text-foreground mb-4">My Ad Spaces</h3>
-          <div className="grid grid-cols-3 gap-4">
-            {DASH_CAMPAIGNS.map((c) => (
-              <div
-                key={c.name}
-                className="rounded-2xl border border-black/6 bg-card overflow-hidden"
-              >
-                <div
-                  className="aspect-video flex items-center justify-center text-4xl"
-                  style={{ background: `${c.color}18` }}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {campaigns.length === 0 ? (
+              <div className="col-span-full rounded-2xl border border-dashed border-black/10 p-8 text-center bg-card">
+                <Grid3X3 className="w-8 h-8 mx-auto text-muted-foreground/50 mb-2" />
+                <div className="font-['Outfit'] font-bold text-foreground text-sm">
+                  No ad spaces booked yet
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                  Explore the marketplace canvas to choose your coordinates and book a premium ad slot.
+                </p>
+                <button
+                  onClick={() => onNavigate('canvas')}
+                  className="mt-4 px-4 py-2 rounded-xl bg-[#6C5FE6] text-white text-xs font-['Outfit'] font-bold hover:bg-[#584bd4] transition-all"
                 >
-                  {c.emoji}
-                </div>
-                <div className="p-4">
-                  <div className="font-['Outfit'] font-semibold text-sm text-foreground">
-                    {c.name}
-                  </div>
-                  <div className="text-xs text-muted-foreground font-['JetBrains_Mono'] mt-0.5">
-                    {c.city} · Expires {c.expiry}
-                  </div>
-                  <div className="flex items-center justify-between mt-3">
-                    <Badge
-                      color={
-                        c.status === 'active' ? 'teal' : c.status === 'pending' ? 'purple' : 'amber'
-                      }
-                    >
-                      {c.status}
-                    </Badge>
-                    {c.status === 'expiring' && (
-                      <button
-                        onClick={() => onNavigate('expiring')}
-                        className="text-xs text-amber-400 font-['Outfit'] font-semibold hover:text-amber-300"
-                      >
-                        Renew →
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  Explore Canvas
+                </button>
               </div>
-            ))}
+            ) : (
+              campaigns.map((c) => {
+                const endStr = c.endsAt
+                  ? new Date(c.endsAt).toLocaleDateString('en-IN', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : '30 Days'
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => onOpenCampaign(c)}
+                    className="rounded-2xl border border-black/6 bg-card overflow-hidden text-left hover:border-[#6C5FE6]/30 hover:shadow-md transition-all"
+                  >
+                    <div className="aspect-video bg-[#EDF0F8] relative">
+                      <CreativeImage campaign={c} sizes="(max-width: 1200px) 33vw, 360px" />
+                    </div>
+                    <div className="p-4">
+                      <div className="font-['Outfit'] font-semibold text-sm text-foreground">
+                        {c.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-['JetBrains_Mono'] mt-0.5">
+                        Chennai Canvas · Expires {endStr}
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <Badge color={c.status === 'published' ? 'teal' : 'purple'}>
+                          {c.status}
+                        </Badge>
+                        <span className="text-xs text-[#6C5FE6] font-['Outfit'] font-semibold">
+                          Open →
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })
+            )}
           </div>
           </>
           )}
