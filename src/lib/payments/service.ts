@@ -112,8 +112,6 @@ export class PaymentService {
       expiresAt: lockExpiresAt,
     }
   }
-    }
-  }
 
   /**
    * Processes verified payment webhooks idempotently

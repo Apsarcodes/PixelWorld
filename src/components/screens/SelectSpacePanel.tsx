@@ -366,7 +366,7 @@ export function SelectSpacePanel({
           )}
 
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">GST (5% Govt. Tax)</span>
+            <span className="text-muted-foreground">GST (18% Govt. Tax)</span>
             <span className="font-semibold font-['JetBrains_Mono']">₹{pricing.gstAmount.toLocaleString()}</span>
           </div>
 
