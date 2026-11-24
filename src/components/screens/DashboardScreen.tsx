@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { isOwnerEmail } from '@/constants/auth'
 import {
   AlertTriangle,
   BarChart2,
@@ -133,7 +134,7 @@ export function DashboardScreen({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || isOwnerEmail(user?.email)) && (
               <button
                 onClick={() => onNavigate('admin')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#6C5FE6]/10 hover:bg-[#6C5FE6]/20 text-[#6C5FE6] text-xs font-['Outfit'] font-bold transition-all cursor-pointer"
@@ -167,7 +168,7 @@ export function DashboardScreen({
                   </p>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#00A882]/10 border border-[#00A882]/20 text-[#00A882] text-xs font-['Outfit'] font-semibold">
-                  <CheckCircle2 size={14} /> YouPI-PG Sandbox Ready
+                  <CheckCircle2 size={14} /> YouPI-PG Live Direct Bank UPI
                 </div>
               </div>
 

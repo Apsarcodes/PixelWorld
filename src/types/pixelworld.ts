@@ -22,6 +22,20 @@ export type StoredCampaign = {
   startsAt: string
   endsAt: string
   status: 'draft' | 'published'
+  city?: string
+  slotId?: number | string
+  slotIdentifier?: string
+  sizeCategory?: 'small' | 'medium' | 'large' | 'billboard' | 'custom'
+  durationDays?: number
+  subtotal?: number
+  gstAmount?: number
+  totalAmount?: number
+  addons?: {
+    whatsappCta?: boolean
+    verifiedBadge?: boolean
+    priorityPlacement?: boolean
+    analyticsPro?: boolean
+  }
   creative: {
     id: string | number
     url?: string | null

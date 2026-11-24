@@ -16,6 +16,7 @@ import { AdminCanvasScreen } from '@/components/screens/AdminCanvasScreen'
 import { LoginScreen } from '@/components/screens/LoginScreen'
 import { SignupScreen } from '@/components/screens/SignupScreen'
 import { UserProfileScreen } from '@/components/screens/UserProfileScreen'
+import { isOwnerEmail } from '@/constants/auth'
 
 export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | null }) {
   const [screen, setScreen] = useState<Screen>('login')
@@ -93,7 +94,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       return
     }
 
-    const isAdmin = currentUser.role === 'admin'
+    const isAdmin = currentUser.role === 'admin' || isOwnerEmail(currentUser.email)
 
     if (
       (nextScreen === 'admin' ||

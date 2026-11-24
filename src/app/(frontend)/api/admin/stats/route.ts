@@ -1,6 +1,7 @@
 import { appAuth } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { isOwnerEmail } from '@/constants/auth'
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
       user &&
       ((user as any).role === 'admin' ||
         (user as any).collection === 'admins' ||
-        user.email === 'mohamedapsarasif761@gmail.com')
+        isOwnerEmail(user.email))
 
     if (!isAdmin) {
       return Response.json({ error: 'Forbidden. Admin privileges required.' }, { status: 403 })
@@ -56,15 +57,31 @@ export async function GET(request: Request) {
     )
     const failedPayments = paymentsResult.docs.filter((p: any) => p.status === 'failed').length
 
-    // 4. Inventory Slots & Occupancy
+    // 4. Inventory Slots & Occupancy (strictly tied to real published campaigns)
     const slotsResult = await payload.find({
       collection: 'inventory-slots' as any,
       limit: 200,
       overrideAccess: true,
     })
     const totalSlots = slotsResult.totalDocs || 100
-    const occupiedSlots = slotsResult.docs.filter((s: any) => s.status === 'occupied').length
+    const occupiedSlots = activeCampaigns
     const occupancyRate = Math.round((occupiedSlots / (totalSlots || 1)) * 100)
+
+    // Background cleanup of any orphan prototype seed slots
+    for (const slot of slotsResult.docs) {
+      if ((slot as any).status === 'occupied' && !(slot as any).activeCampaign) {
+        payload.update({
+          collection: 'inventory-slots' as any,
+          id: slot.id,
+          overrideAccess: true,
+          data: {
+            status: 'available',
+            brandName: null,
+            tagline: null,
+          },
+        }).catch(() => {})
+      }
+    }
 
     // 5. Cities Breakdown
     const citiesResult = await payload.find({

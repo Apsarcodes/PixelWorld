@@ -17,7 +17,19 @@ export function CreateAdScreen({
   onNavigate: (s: Screen) => void
   onCampaignSaved: (campaign: StoredCampaign) => void
   initialCampaign?: StoredCampaign | null
-  initialDimensions?: { width: number; height: number; duration: number }
+  initialDimensions?: {
+    width: number
+    height: number
+    duration: number
+    city?: string
+    slotId?: number | string
+    slotIdentifier?: string
+    sizeCategory?: string
+    subtotal?: number
+    gstAmount?: number
+    totalAmount?: number
+    addons?: Record<string, boolean>
+  }
 }) {
   const [step, setStep] = useState(initialCampaign ? 2 : 1)
   const [ctaType, setCtaType] = useState(initialCampaign?.callToAction ?? 'Visit Website')
@@ -118,7 +130,18 @@ export function CreateAdScreen({
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Unable to save campaign.')
-      const campaign = result.campaign as StoredCampaign
+      const campaign: StoredCampaign = {
+        ...result.campaign,
+        city: initialDimensions?.city || initialCampaign?.city || 'Chennai',
+        slotId: initialDimensions?.slotId || initialCampaign?.slotId || 1,
+        slotIdentifier: initialDimensions?.slotIdentifier || initialCampaign?.slotIdentifier,
+        sizeCategory: (initialDimensions?.sizeCategory as any) || initialCampaign?.sizeCategory || 'medium',
+        durationDays: Number(durationPreset) || initialDimensions?.duration || 30,
+        subtotal: initialDimensions?.subtotal || initialCampaign?.subtotal,
+        gstAmount: initialDimensions?.gstAmount || initialCampaign?.gstAmount,
+        totalAmount: initialDimensions?.totalAmount || initialCampaign?.totalAmount,
+        addons: (initialDimensions?.addons as any) || initialCampaign?.addons,
+      }
       setSavedCampaign(campaign)
       onCampaignSaved(campaign)
       setStep(2)

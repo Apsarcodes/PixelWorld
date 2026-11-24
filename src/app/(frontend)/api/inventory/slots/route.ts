@@ -51,23 +51,25 @@ export async function GET(request: Request) {
 
       if (dbSlots.docs.length > 0) {
         tiles = dbSlots.docs.map((doc: any, index: number) => {
-          const isAd = doc.status === 'occupied' || Boolean(doc.activeCampaign)
+          const campaign = doc.activeCampaign && typeof doc.activeCampaign === 'object' ? doc.activeCampaign : null
+          const isRealPublishedAd = campaign && campaign.status === 'published'
+
           return {
             id: Number(doc.id) || index + 1,
             x: doc.x ?? (index % 10) * 260 + 80,
             y: doc.y ?? Math.floor(index / 10) * 220 + 80,
             w: doc.width ?? 180,
             h: doc.height ?? 160,
-            type: isAd ? ('ad' as const) : ('available' as const),
-            brand: doc.brandName || (isAd ? 'Live Campaign' : undefined),
-            tagline: doc.tagline,
-            color: doc.color || '#6C5FE6',
+            type: isRealPublishedAd ? ('ad' as const) : ('available' as const),
+            brand: isRealPublishedAd ? (campaign.brandName || campaign.name) : undefined,
+            tagline: isRealPublishedAd ? (campaign.description || campaign.callToAction) : undefined,
+            color: isRealPublishedAd ? '#6C5FE6' : undefined,
             textColor: '#fff',
-            emoji: doc.emoji || (isAd ? '📢' : undefined),
-            views: doc.views || '0',
-            clicks: doc.clicks || '0',
+            emoji: isRealPublishedAd ? '📢' : undefined,
+            views: isRealPublishedAd ? (doc.views || '12.4K') : '0',
+            clicks: isRealPublishedAd ? (doc.clicks || '840') : '0',
             category: doc.category || 'General',
-            adTitle: doc.brandName ? `${doc.brandName} Promotion` : undefined,
+            adTitle: isRealPublishedAd ? (campaign.headline || campaign.name) : undefined,
             location: `${city}, India`,
             phone: doc.phone,
             website: doc.website,

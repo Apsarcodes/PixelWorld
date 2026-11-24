@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { jwtSign } from 'payload'
 import { getPayloadClient } from '@/lib/payload'
 import type { User } from '@/payload-types'
+import { isOwnerEmail } from '@/constants/auth'
 
 const APP_SESSION_COOKIE = 'app-session'
 const SESSION_SECONDS = 60 * 60 * 24 * 7
@@ -24,6 +25,8 @@ export type AppUser = {
 }
 
 function toAppUser(user: Record<string, unknown>): AppUser {
+  const email = String(user.email ?? '').toLowerCase().trim()
+  const isAdmin = user.role === 'admin' || isOwnerEmail(email)
   return {
     id: user.id as string | number,
     email: String(user.email ?? ''),
@@ -34,7 +37,7 @@ function toAppUser(user: Record<string, unknown>): AppUser {
       user.accountType === 'business' || user.accountType === 'agency'
         ? user.accountType
         : 'advertiser',
-    role: user.role === 'admin' ? 'admin' : 'user',
+    role: isAdmin ? 'admin' : 'user',
     company: typeof user.company === 'string' ? user.company : null,
     onboardingGoal: typeof user.onboardingGoal === 'string' ? user.onboardingGoal : null,
   }
@@ -68,6 +71,20 @@ export function createAppAuth() {
       if (!result.token || !result.user || result.user.collection !== 'users') {
         throw new Error('Invalid email or password.')
       }
+      const emailLower = email.toLowerCase().trim()
+      if (isOwnerEmail(emailLower) && (result.user as any).role !== 'admin') {
+        try {
+          await payload.update({
+            collection: 'users',
+            id: result.user.id,
+            overrideAccess: true,
+            data: { role: 'admin' },
+          })
+          ;(result.user as any).role = 'admin'
+        } catch {
+          // Ignore
+        }
+      }
       await setSessionCookie(result.token, result.exp)
       return {
         user: toAppUser(result.user as unknown as Record<string, unknown>),
@@ -78,7 +95,8 @@ export function createAppAuth() {
     async issueSessionForUser(user: { id: string | number; email: string; [key: string]: unknown }) {
       const secret =
         process.env.PAYLOAD_SECRET || 'dev_insecure_payload_secret_must_be_changed_in_prod_32bytes'
-      const userRole = user.role === 'admin' ? 'admin' : 'user'
+      const emailLower = String(user.email ?? '').toLowerCase().trim()
+      const userRole = user.role === 'admin' || isOwnerEmail(emailLower) ? 'admin' : 'user'
       const { exp, token } = await jwtSign({
         fieldsToSign: { id: user.id, collection: 'users', email: user.email, role: userRole },
         secret,
@@ -86,7 +104,7 @@ export function createAppAuth() {
       })
       await setSessionCookie(token, exp)
       return {
-        user: toAppUser(user as unknown as Record<string, unknown>),
+        user: toAppUser({ ...user, role: userRole }),
         token,
       }
     },
@@ -107,7 +125,23 @@ export function createAppAuth() {
 
     async currentUser(request?: Request): Promise<AppUser | null> {
       const user = await this.payloadUser(request)
-      return user ? toAppUser(user as unknown as Record<string, unknown>) : null
+      if (!user) return null
+      const email = String(user.email ?? '').toLowerCase().trim()
+      if (isOwnerEmail(email) && (user as any).role !== 'admin') {
+        try {
+          const payload = await getPayloadClient()
+          await payload.update({
+            collection: 'users',
+            id: user.id,
+            overrideAccess: true,
+            data: { role: 'admin' },
+          })
+          ;(user as any).role = 'admin'
+        } catch {
+          // Ignore
+        }
+      }
+      return toAppUser(user as unknown as Record<string, unknown>)
     },
 
     async payloadUser(request?: Request): Promise<(User & { collection: 'users' }) | null> {

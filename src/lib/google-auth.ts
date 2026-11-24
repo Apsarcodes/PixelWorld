@@ -1,4 +1,5 @@
 import 'server-only'
+import { isOwnerEmail } from '@/constants/auth'
 
 import crypto from 'crypto'
 import { getPayloadClient } from '@/lib/payload'
@@ -101,8 +102,7 @@ export async function exchangeGoogleCodeForProfile(
 export async function upsertGoogleAccount(profile: GoogleUserProfile) {
   const payload = await getPayloadClient()
   const email = profile.email.toLowerCase().trim()
-  const adminEmails = ['mohamedapsarasif761@gmail.com', 'apsarcodes@gmail.com']
-  const assignedRole: 'admin' | 'user' = adminEmails.includes(email) ? 'admin' : 'user'
+  const assignedRole: 'admin' | 'user' = isOwnerEmail(email) ? 'admin' : 'user'
 
   // 1. Check if user already exists
   const existing = await payload.find({

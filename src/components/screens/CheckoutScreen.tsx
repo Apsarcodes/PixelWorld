@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -11,12 +11,14 @@ import {
   QrCode,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   X,
 } from 'lucide-react'
 import type { Screen, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
 import { previewAuthorizationHeaders } from '@/lib/session'
+import { calculateDynamicPrice } from '@/lib/pricing'
 
 export function CheckoutScreen({
   onNavigate,
@@ -84,6 +86,17 @@ export function CheckoutScreen({
     return `${mins.toString().padStart(2, '0')}:${rem.toString().padStart(2, '0')}`
   }
 
+  const pricing = useMemo(() => {
+    return calculateDynamicPrice({
+      city: campaign?.city || 'Chennai',
+      sizeCategory: (campaign?.sizeCategory as any) || 'medium',
+      width: campaign?.width || 100,
+      height: campaign?.height || 100,
+      durationDays: campaign?.durationDays || 30,
+      addons: campaign?.addons,
+    })
+  }, [campaign])
+
   const handlePay = async () => {
     if (loading) return
     setError('')
@@ -99,8 +112,13 @@ export function CheckoutScreen({
         credentials: 'include',
         body: JSON.stringify({
           campaignId: campaign?.id || 1,
-          slotId: 1,
-          durationDays: 30,
+          slotId: campaign?.slotId || 1,
+          durationDays: pricing.durationDays,
+          sizeCategory: pricing.sizeCategory,
+          city: pricing.city,
+          width: campaign?.width,
+          height: campaign?.height,
+          addons: campaign?.addons,
         }),
       })
 
@@ -175,9 +193,9 @@ export function CheckoutScreen({
         <div className="w-24" />
       </header>
 
-      <div className="max-w-4xl mx-auto px-8 py-10 grid grid-cols-5 gap-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 flex flex-col lg:grid lg:grid-cols-5 gap-8">
         {/* Summary */}
-        <div className="col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
           <div className="rounded-2xl border border-black/8 bg-card p-6">
             <h3 className="font-['Outfit'] font-bold text-lg text-foreground mb-5">
               Campaign Summary
@@ -189,10 +207,11 @@ export function CheckoutScreen({
             )}
             <div className="space-y-3">
               {[
-                ['Location', 'Chennai, Tamil Nadu'],
-                ['Ad Space', 'CHN-A-1024'],
-                ['Size', '100 × 100 units (Medium)'],
-                ['Duration', '30 Days'],
+                ['Location', `${pricing.city}, India`],
+                ['Market Tier', `${pricing.cityTier} (${pricing.cityMultiplier}× weight)`],
+                ['Ad Space ID', campaign?.slotIdentifier || `CHN-A-${campaign?.slotId || 1024}`],
+                ['Size / Dimensions', `${pricing.dimensions} (${pricing.sizeCategory})`],
+                ['Duration', `${pricing.durationDays} Days`],
                 ['Payment Gateway', 'YouPI-PG (Direct Peer-to-Bank)'],
               ].map(([k, v]) => (
                 <div
@@ -278,9 +297,12 @@ export function CheckoutScreen({
         </div>
 
         {/* Price summary */}
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           <div className="rounded-2xl border border-black/8 bg-card p-6 sticky top-24 space-y-5">
-            <h3 className="font-['Outfit'] font-bold text-lg text-foreground">Order Total</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-['Outfit'] font-bold text-lg text-foreground">Order Total</h3>
+              <Badge color="purple">{pricing.durationDays} Days</Badge>
+            </div>
 
             {error && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-['Inter'] flex flex-col gap-2">
@@ -296,20 +318,42 @@ export function CheckoutScreen({
               </div>
             )}
 
-            <div className="space-y-3">
-              {[
-                ['Space Rental (30 days)', '₹999'],
-                ['GST (18% Govt. Tax)', '₹180'],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">{k}</span>
-                  <span className="text-sm text-foreground font-semibold">{v}</span>
+            <div className="space-y-2.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground font-['Outfit']">Space Rental ({pricing.dimensions})</span>
+                <span className="text-foreground font-semibold font-['JetBrains_Mono']">
+                  ₹{pricing.spaceRentalSubtotal.toLocaleString()}
+                </span>
+              </div>
+              {pricing.durationDiscountPct > 0 && (
+                <div className="flex justify-between text-xs text-[#00A882]">
+                  <span>Duration Bulk Savings</span>
+                  <span className="font-semibold font-['JetBrains_Mono']">-{pricing.durationDiscountPct}% applied</span>
                 </div>
-              ))}
+              )}
+              {pricing.addonsTotal > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground font-['Outfit']">Power-Ups ({pricing.activeAddons.length})</span>
+                  <span className="text-foreground font-semibold font-['JetBrains_Mono']">
+                    +₹{pricing.addonsTotal.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground font-['Outfit']">GST (18% Govt. Tax)</span>
+                <span className="text-foreground font-semibold font-['JetBrains_Mono']">
+                  ₹{pricing.gstAmount.toLocaleString()}
+                </span>
+              </div>
             </div>
             <div className="border-t border-black/8 pt-4 flex justify-between items-center">
-              <span className="font-['Outfit'] font-bold text-foreground text-lg">Total</span>
-              <span className="font-['Outfit'] font-black text-2xl text-[#6C5FE6]">₹1,179</span>
+              <div>
+                <span className="font-['Outfit'] font-bold text-foreground text-lg">Total Due</span>
+                <div className="text-[11px] text-muted-foreground">Direct Bank UPI Settlement</div>
+              </div>
+              <span className="font-['Outfit'] font-black text-2xl text-[#6C5FE6]">
+                ₹{pricing.totalAmount.toLocaleString()}
+              </span>
             </div>
 
             <PrimaryBtn

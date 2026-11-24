@@ -1,13 +1,24 @@
 import crypto from 'crypto'
 import { defaultPaymentProvider } from './youpi-provider'
 import type { PaymentProvider, PaymentOrderResult } from './types'
+import { calculateDynamicPrice, type PricingOptions, type SizeCategory } from '@/lib/pricing'
 
 export interface InitiateBookingParams {
   userId: string | number
   organizationId: string | number
   campaignId: string | number
   slotId: string | number
-  durationDays: 7 | 30 | 90
+  durationDays?: number
+  sizeCategory?: SizeCategory
+  city?: string
+  width?: number
+  height?: number
+  addons?: {
+    whatsappCta?: boolean
+    verifiedBadge?: boolean
+    priorityPlacement?: boolean
+    analyticsPro?: boolean
+  }
   returnUrl: string
   customer?: {
     fullName?: string
@@ -35,33 +46,34 @@ export class PaymentService {
   /**
    * Calculates tamper-proof pricing strictly on the server
    */
-  calculatePrice(durationDays: number, sizeCategory = 'medium'): {
+  calculatePrice(options: PricingOptions = {}): {
     subtotal: number
     gstAmount: number
     totalAmount: number
+    durationDays: number
   } {
-    const basePrices: Record<string, number> = {
-      small: 299,
-      medium: 999,
-      large: 2499,
-      premium: 4999,
+    const breakdown = calculateDynamicPrice(options)
+    return {
+      subtotal: breakdown.subtotal,
+      gstAmount: breakdown.gstAmount,
+      totalAmount: breakdown.totalAmount,
+      durationDays: breakdown.durationDays,
     }
-
-    const base = basePrices[sizeCategory] || 999
-    // Duration multipliers
-    const durationMultiplier = durationDays === 7 ? 0.3 : durationDays === 30 ? 1.0 : 2.7
-    const subtotal = Math.round(base * durationMultiplier)
-    const gstAmount = Math.round(subtotal * 0.18) // 18% GST standard
-    const totalAmount = subtotal + gstAmount
-
-    return { subtotal, gstAmount, totalAmount }
   }
 
   /**
    * Initiates a real booking order with a time-limited lock (15 minutes)
    */
   async initiateBooking(params: InitiateBookingParams): Promise<BookingOrderResult> {
-    const { totalAmount, subtotal, gstAmount } = this.calculatePrice(params.durationDays)
+    const pricing = this.calculatePrice({
+      city: params.city,
+      sizeCategory: params.sizeCategory,
+      durationDays: params.durationDays,
+      width: params.width,
+      height: params.height,
+      addons: params.addons,
+    })
+    const { totalAmount, subtotal, gstAmount, durationDays } = pricing
 
     // Generate unique order ID and idempotency key
     const orderId = `PW-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
@@ -80,7 +92,7 @@ export class PaymentService {
         slotId: params.slotId,
         organizationId: params.organizationId,
         userId: params.userId,
-        durationDays: params.durationDays,
+        durationDays,
         subtotal,
         gstAmount,
         lockExpiresAt,
@@ -96,8 +108,10 @@ export class PaymentService {
       amount: totalAmount,
       subtotal,
       gstAmount,
-      durationDays: params.durationDays,
+      durationDays,
       expiresAt: lockExpiresAt,
+    }
+  }
     }
   }
 

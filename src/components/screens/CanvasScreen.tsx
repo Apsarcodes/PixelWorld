@@ -3,7 +3,7 @@ import { ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minu
 import type { Screen, CanvasTile, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
-import { SelectSpacePanel } from '@/components/screens/SelectSpacePanel'
+import { SelectSpacePanel, type SelectedSpaceConfig } from '@/components/screens/SelectSpacePanel'
 import { CreateAdScreen } from '@/components/screens/CreateAdScreen'
 import { CELL, CANVAS_W, CANVAS_H, FILTER_CATEGORIES, normalizeCategory } from '@/constants/canvas'
 
@@ -26,12 +26,7 @@ export function CanvasScreen({
   const [hoveredTile, setHoveredTile] = useState<CanvasTile | null>(null)
   const [selectedAd, setSelectedAd] = useState<CanvasTile | null>(null)
   const [selectedSpace, setSelectedSpace] = useState<CanvasTile | null>(null)
-  const [reservedSpaceConfig, setReservedSpaceConfig] = useState<{
-    size: string
-    duration: number
-    space: CanvasTile
-    price: number
-  } | null>(null)
+  const [reservedSpaceConfig, setReservedSpaceConfig] = useState<SelectedSpaceConfig | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   const [tiles, setTiles] = useState<CanvasTile[]>([])
@@ -127,9 +122,17 @@ export function CanvasScreen({
         initialDimensions={
           reservedSpaceConfig
             ? {
-                width: reservedSpaceConfig.space.w || 200,
-                height: reservedSpaceConfig.space.h || 200,
+                width: reservedSpaceConfig.width,
+                height: reservedSpaceConfig.height,
                 duration: reservedSpaceConfig.duration,
+                city: reservedSpaceConfig.city,
+                slotId: reservedSpaceConfig.space.id,
+                slotIdentifier: `SLOT-${reservedSpaceConfig.space.id}`,
+                sizeCategory: reservedSpaceConfig.size,
+                subtotal: reservedSpaceConfig.subtotal,
+                gstAmount: reservedSpaceConfig.gstAmount,
+                totalAmount: reservedSpaceConfig.price,
+                addons: reservedSpaceConfig.addons,
               }
             : undefined
         }
@@ -612,7 +615,7 @@ export function CanvasScreen({
 
       {/* Select space panel */}
       {selectedSpace && !selectedAd && (
-        <div className="fixed right-0 top-0 bottom-0 w-96 bg-white border-l border-black/8 z-50 overflow-y-auto shadow-2xl">
+        <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-md bg-card border-l border-black/8 z-50 overflow-y-auto shadow-2xl">
           <SelectSpacePanel
             space={selectedSpace}
             onClose={() => setSelectedSpace(null)}

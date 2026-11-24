@@ -17,8 +17,13 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as Record<string, unknown>
     const campaignId = body.campaignId as string | number
-    const slotId = body.slotId as string | number || 1
-    const durationDays = Number(body.durationDays) === 7 ? 7 : Number(body.durationDays) === 90 ? 90 : 30
+    const slotId = (body.slotId as string | number) || 1
+    const durationDays = Number(body.durationDays) || 30
+    const sizeCategory = (body.sizeCategory as any) || 'medium'
+    const city = typeof body.city === 'string' ? body.city : 'Chennai'
+    const width = Number(body.width) || undefined
+    const height = Number(body.height) || undefined
+    const addons = typeof body.addons === 'object' && body.addons !== null ? (body.addons as any) : undefined
     const returnUrl = (typeof body.returnUrl === 'string' && body.returnUrl) || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/?screen=dashboard`
 
     const organizationId =
@@ -31,7 +36,12 @@ export async function POST(request: Request) {
       organizationId: organizationId as string | number,
       campaignId,
       slotId,
-      durationDays: durationDays as 7 | 30 | 90,
+      durationDays,
+      sizeCategory,
+      city,
+      width,
+      height,
+      addons,
       returnUrl,
       customer: {
         fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined,
