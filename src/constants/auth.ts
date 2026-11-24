@@ -1,6 +1,5 @@
 export const ADMIN_EMAILS: readonly string[] = Object.freeze([
   'mohamedapsarasif761@gmail.com',
-  'mohamedapsarasof761@gmail.com',
   'rafimmedia@gmail.com',
   'apsarcodes@gmail.com',
 ])

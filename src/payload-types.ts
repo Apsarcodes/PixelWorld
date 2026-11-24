@@ -238,6 +238,7 @@ export interface User {
   lastName?: string | null;
   phone?: string | null;
   accountType: 'advertiser' | 'business' | 'agency';
+  role: 'user' | 'admin';
   company?: string | null;
   defaultOrganization?: (number | null) | Organization;
   preferredCategories?:
@@ -1080,6 +1081,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T;
   phone?: T;
   accountType?: T;
+  role?: T;
   company?: T;
   defaultOrganization?: T;
   preferredCategories?: T;

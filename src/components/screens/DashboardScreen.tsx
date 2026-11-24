@@ -176,7 +176,7 @@ export function DashboardScreen({
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-black/5 bg-[#F5F7FC]/50">
-                      {['Invoice #', 'Campaign', 'Date', 'Amount', 'GST (18%)', 'Provider', 'Status', 'Action'].map(
+                      {['Invoice #', 'Campaign', 'Date', 'Amount', 'GST (5%)', 'Provider', 'Status', 'Action'].map(
                         (h) => (
                           <th
                             key={h}

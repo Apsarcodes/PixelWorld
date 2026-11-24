@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import type { Screen, StoredCampaign } from '@/types/pixelworld'
-import { PwLogo, PrimaryBtn, GhostBtn } from '@/components/common/UIComponents'
+import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
 import { previewAuthorizationHeaders } from '@/lib/session'
 import { calculateDynamicPrice } from '@/lib/pricing'
@@ -171,7 +171,7 @@ export function CheckoutScreen({
               Payment ID: <span className="text-foreground font-semibold">{paymentDetails?.paymentId}</span>
             </div>
             <div>
-              Amount Paid: <span className="text-[#00A882] font-semibold">₹{paymentDetails?.amount?.toLocaleString()} (incl. 18% GST)</span>
+              Amount Paid: <span className="text-[#00A882] font-semibold">₹{paymentDetails?.amount?.toLocaleString()} (incl. 5% GST)</span>
             </div>
             <div>
               Status: <span className="text-[#00A882] font-semibold">Confirmed / In Moderation</span>
@@ -340,7 +340,7 @@ export function CheckoutScreen({
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground font-['Outfit']">GST (18% Govt. Tax)</span>
+                <span className="text-muted-foreground font-['Outfit']">GST (5% Govt. Tax)</span>
                 <span className="text-foreground font-semibold font-['JetBrains_Mono']">
                   ₹{pricing.gstAmount.toLocaleString()}
                 </span>

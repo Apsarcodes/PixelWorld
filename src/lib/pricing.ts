@@ -118,7 +118,7 @@ export function calculateDynamicPrice(options: PricingOptions = {}): PricingBrea
   }
 
   const subtotal = spaceRentalSubtotal + addonsTotal
-  const gstRate = 0.18
+  const gstRate = 0.05
   const gstAmount = Math.round(subtotal * gstRate)
   const totalAmount = subtotal + gstAmount
 
