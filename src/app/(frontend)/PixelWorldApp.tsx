@@ -21,9 +21,22 @@ import { isOwnerEmail } from '@/constants/auth'
 export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | null }) {
   const [screen, setScreen] = useState<Screen>('login')
   const [currentUser, setCurrentUser] = useState<AppUser | null>(initialUser)
-  const [selectedCity, setSelectedCity] = useState<string>('chennai')
+  const [selectedCity, setSelectedCity] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pixelworld_selected_city') || 'mumbai'
+    }
+    return 'mumbai'
+  })
   const [campaigns, setCampaigns] = useState<StoredCampaign[]>([])
   const [activeCampaign, setActiveCampaign] = useState<StoredCampaign | null>(null)
+
+  const handleSelectCity = (city: string) => {
+    const normalized = (city || 'mumbai').toLowerCase().trim()
+    setSelectedCity(normalized)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pixelworld_selected_city', normalized)
+    }
+  }
 
   useEffect(() => {
     document.documentElement.classList.remove('dark')
@@ -137,7 +150,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
         <CountryScreen
           onNavigate={nav}
           onSelectCity={(city) => {
-            setSelectedCity(city)
+            handleSelectCity(city)
             nav('canvas')
           }}
         />
@@ -146,6 +159,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
         <CanvasScreen
           onNavigate={nav}
           selectedCity={selectedCity}
+          onSelectCity={handleSelectCity}
           campaigns={campaigns}
           onCampaignSaved={handleCampaignSaved}
         />

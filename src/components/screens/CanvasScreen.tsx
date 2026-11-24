@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react'
-import { ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minus, Navigation, Phone, Play, Plus, RotateCcw, Search, Share2, ShoppingBag, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minus, Navigation, Phone, Play, Plus, RotateCcw, Search, Share2, ShoppingBag, X } from 'lucide-react'
 import type { Screen, CanvasTile, StoredCampaign } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
@@ -7,14 +7,27 @@ import { SelectSpacePanel, type SelectedSpaceConfig } from '@/components/screens
 import { CreateAdScreen } from '@/components/screens/CreateAdScreen'
 import { CELL, CANVAS_W, CANVAS_H, FILTER_CATEGORIES, normalizeCategory } from '@/constants/canvas'
 
+const INDIAN_CITIES = [
+  { slug: 'mumbai', name: 'Mumbai', icon: '🌊', state: 'Maharashtra', tier: 'Tier 1' },
+  { slug: 'bangalore', name: 'Bangalore', icon: '🌳', state: 'Karnataka', tier: 'Tier 1' },
+  { slug: 'delhi', name: 'Delhi NCR', icon: '🕌', state: 'Delhi NCR', tier: 'Tier 1' },
+  { slug: 'chennai', name: 'Chennai', icon: '🏛️', state: 'Tamil Nadu', tier: 'Tier 1.5' },
+  { slug: 'hyderabad', name: 'Hyderabad', icon: '💎', state: 'Telangana', tier: 'Tier 1.5' },
+  { slug: 'pune', name: 'Pune', icon: '🏔️', state: 'Maharashtra', tier: 'Tier 1.5' },
+  { slug: 'kolkata', name: 'Kolkata', icon: '🌉', state: 'West Bengal', tier: 'Tier 2' },
+  { slug: 'ahmedabad', name: 'Ahmedabad', icon: '🪁', state: 'Gujarat', tier: 'Tier 2' },
+]
+
 export function CanvasScreen({
   onNavigate,
-  selectedCity = 'chennai',
+  selectedCity = 'mumbai',
+  onSelectCity,
   campaigns,
   onCampaignSaved,
 }: {
   onNavigate: (s: Screen) => void
   selectedCity?: string
+  onSelectCity?: (city: string) => void
   campaigns: StoredCampaign[]
   onCampaignSaved: (campaign: StoredCampaign) => void
 }) {
@@ -28,6 +41,7 @@ export function CanvasScreen({
   const [selectedSpace, setSelectedSpace] = useState<CanvasTile | null>(null)
   const [reservedSpaceConfig, setReservedSpaceConfig] = useState<SelectedSpaceConfig | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [showCityMenu, setShowCityMenu] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   const [tiles, setTiles] = useState<CanvasTile[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
@@ -161,7 +175,50 @@ export function CanvasScreen({
             India
           </button>
           <ChevronRight size={12} />
-          <span className="text-foreground font-semibold">{formattedCity}</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowCityMenu((prev) => !prev)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 text-foreground font-semibold font-['Outfit'] transition-all cursor-pointer text-xs sm:text-sm"
+            >
+              <span>{INDIAN_CITIES.find((c) => c.slug === selectedCity?.toLowerCase())?.icon || '🏛️'}</span>
+              <span>{formattedCity}</span>
+              <ChevronDown size={14} className="text-muted-foreground" />
+            </button>
+            {showCityMenu && (
+              <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-2xl border border-black/10 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-wider text-muted-foreground">
+                  Select Advertising Canvas
+                </div>
+                <div className="space-y-1">
+                  {INDIAN_CITIES.map((c) => (
+                    <button
+                      key={c.slug}
+                      onClick={() => {
+                        if (onSelectCity) onSelectCity(c.slug)
+                        setShowCityMenu(false)
+                      }}
+                      className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-all cursor-pointer ${
+                        selectedCity?.toLowerCase() === c.slug
+                          ? 'bg-[#6C5FE6]/10 text-[#6C5FE6] font-bold'
+                          : 'hover:bg-black/5 text-foreground'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{c.icon}</span>
+                        <div>
+                          <div className="font-['Outfit']">{c.name}</div>
+                          <div className="text-[10px] text-muted-foreground">{c.state}</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-['JetBrains_Mono']">
+                        {c.tier}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           {isLoadingSlots && (
             <span className="text-xs text-[#6C5FE6] font-['JetBrains_Mono'] animate-pulse ml-1">
               (syncing...)

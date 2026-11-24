@@ -22,6 +22,27 @@ export async function GET(request: Request) {
       return Response.json({ error: 'paymentId is required' }, { status: 400 })
     }
 
+    // 1. Check local database first
+    try {
+      const { getPayloadClient } = await import('@/lib/payload')
+      const payload = await getPayloadClient()
+      const existing = await payload.find({
+        collection: 'payments' as any,
+        where: { paymentId: { equals: paymentId } },
+        limit: 1,
+        overrideAccess: true,
+      })
+
+      if (existing.docs.length > 0) {
+        const doc = existing.docs[0] as any
+        if (doc.status === 'success' || doc.status === 'completed') {
+          return Response.json({ status: 'success', verification: doc })
+        }
+      }
+    } catch {
+      // Continue to provider check
+    }
+
     const verification = await defaultPaymentProvider.verifyPayment(paymentId)
     return Response.json({ status: verification.status, verification })
   } catch (error) {

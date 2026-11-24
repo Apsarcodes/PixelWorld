@@ -34,6 +34,8 @@ export function CheckoutScreen({
   const [paymentSuccess, setPaymentSuccess] = useState(false)
   const [showUpiModal, setShowUpiModal] = useState(false)
   const [countdown, setCountdown] = useState(15 * 60) // 15-minute lock timer
+  const [utrNumber, setUtrNumber] = useState('')
+  const [isConfirming, setIsConfirming] = useState(false)
 
   const [paymentDetails, setPaymentDetails] = useState<{
     orderId: string
@@ -146,6 +148,45 @@ export function CheckoutScreen({
     }
   }
 
+  const handleConfirmPayment = async (customUtr?: string) => {
+    if (!paymentDetails || isConfirming) return
+    setIsConfirming(true)
+    setError('')
+    try {
+      const utrToUse = (customUtr || utrNumber || '').trim() || `UPI-${Date.now()}`
+      const res = await fetch('/api/payments/confirm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...previewAuthorizationHeaders(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          paymentId: paymentDetails.paymentId,
+          orderId: paymentDetails.orderId,
+          utr: utrToUse,
+          amount: paymentDetails.amount,
+          subtotal: paymentDetails.subtotal,
+          gstAmount: paymentDetails.gstAmount,
+          campaignId: campaign?.id,
+          slotId: campaign?.slotId,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to confirm payment.')
+      }
+
+      setShowUpiModal(false)
+      setPaymentSuccess(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to confirm payment. Please check UTR number.')
+    } finally {
+      setIsConfirming(false)
+    }
+  }
+
   if (paymentSuccess) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
@@ -174,12 +215,17 @@ export function CheckoutScreen({
               Amount Paid: <span className="text-[#00A882] font-semibold">₹{paymentDetails?.amount?.toLocaleString()} (incl. 18% GST)</span>
             </div>
             <div>
-              Status: <span className="text-[#00A882] font-semibold">Confirmed / In Moderation</span>
+              Status: <span className="text-[#00A882] font-semibold">Confirmed · Published Live on Canvas</span>
             </div>
           </div>
-          <PrimaryBtn className="w-full justify-center" onClick={() => onNavigate('dashboard')}>
-            Go to Advertiser Dashboard <ArrowRight size={16} />
-          </PrimaryBtn>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <PrimaryBtn className="flex-1 justify-center" onClick={() => onNavigate('canvas')}>
+              View Live on Canvas <ArrowRight size={16} />
+            </PrimaryBtn>
+            <GhostBtn className="flex-1 justify-center" onClick={() => onNavigate('dashboard')}>
+              Go to Dashboard
+            </GhostBtn>
+          </div>
         </div>
       </div>
     )
@@ -462,10 +508,52 @@ export function CheckoutScreen({
               </div>
             </div>
 
+            {/* Direct UTR Confirmation Card */}
+            <div className="p-3.5 rounded-2xl bg-[#6C5FE6]/5 border border-[#6C5FE6]/20 space-y-2.5 mb-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-['Outfit'] font-bold text-foreground">
+                  Paid via UPI? Confirm Transfer
+                </span>
+                <span className="text-[10px] text-[#00A882] font-semibold font-['JetBrains_Mono']">
+                  Instant Verification
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={utrNumber}
+                  onChange={(e) => setUtrNumber(e.target.value)}
+                  placeholder="Enter 12-digit UPI UTR (Optional)"
+                  className="flex-1 bg-white border border-black/10 rounded-xl px-3 py-2 text-xs font-['JetBrains_Mono'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#6C5FE6]"
+                />
+                <button
+                  onClick={() => handleConfirmPayment()}
+                  disabled={isConfirming}
+                  className="px-3 py-2 rounded-xl bg-[#00A882] hover:bg-[#009674] text-white text-xs font-['Outfit'] font-bold transition-all disabled:opacity-50 shrink-0 cursor-pointer"
+                >
+                  {isConfirming ? <Loader2 size={13} className="animate-spin" /> : 'Confirm'}
+                </button>
+              </div>
+              <button
+                onClick={() => handleConfirmPayment()}
+                disabled={isConfirming}
+                className="w-full py-2.5 rounded-xl bg-[#6C5FE6] hover:bg-[#5C4FE0] text-white text-xs font-['Outfit'] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-[#6C5FE6]/25"
+              >
+                {isConfirming ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Verifying Bank Settlement...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={14} /> I Have Completed Payment (Activate My Ad)
+                  </>
+                )}
+              </button>
+            </div>
+
             {/* Status indicator */}
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground font-['Inter'] py-2">
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground font-['Inter'] py-1">
               <Loader2 size={13} className="animate-spin text-[#6C5FE6]" />
-              <span>Awaiting payment from your UPI app...</span>
+              <span>Listening for live bank webhook or manual confirmation...</span>
             </div>
           </div>
         </div>
