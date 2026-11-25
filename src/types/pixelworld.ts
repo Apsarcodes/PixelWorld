@@ -25,7 +25,7 @@ export type StoredCampaign = {
   city?: string
   slotId?: number | string
   slotIdentifier?: string
-  sizeCategory?: 'small' | 'medium' | 'large' | 'billboard' | 'custom'
+  sizeCategory?: 'small' | 'medium' | 'large'
   durationDays?: number
   subtotal?: number
   gstAmount?: number

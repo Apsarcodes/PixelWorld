@@ -77,7 +77,7 @@ export function SignupScreen({
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Unable to create account.')
-      savePreviewSession(result.previewToken)
+      savePreviewSession(result.token || result.previewToken)
       const sessionResponse = await fetch('/api/app-auth/me', {
         credentials: 'include',
         cache: 'no-store',

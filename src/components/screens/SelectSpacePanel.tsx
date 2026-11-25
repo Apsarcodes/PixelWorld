@@ -32,8 +32,6 @@ export function SelectSpacePanel({
   onContinue: (config: SelectedSpaceConfig) => void
 }) {
   const [selectedSize, setSelectedSize] = useState<SizeCategory>('medium')
-  const [customWidth, setCustomWidth] = useState<number>(space.w || 150)
-  const [customHeight, setCustomHeight] = useState<number>(space.h || 150)
   const [duration, setDuration] = useState<number>(30)
   const [isReserving, setIsReserving] = useState(false)
 
@@ -54,12 +52,10 @@ export function SelectSpacePanel({
   }, [space.location])
 
   const dimensions = useMemo(() => {
-    if (selectedSize === 'small') return { w: 50, h: 50 }
-    if (selectedSize === 'medium') return { w: 100, h: 100 }
-    if (selectedSize === 'large') return { w: 200, h: 200 }
-    if (selectedSize === 'billboard') return { w: 300, h: 200 }
-    return { w: customWidth, h: customHeight }
-  }, [selectedSize, customWidth, customHeight])
+    if (selectedSize === 'small') return { w: 100, h: 100 }
+    if (selectedSize === 'large') return { w: 400, h: 200 }
+    return { w: 200, h: 200 }
+  }, [selectedSize])
 
   // Real-time server-aligned dynamic price calculation
   const pricing = useMemo(() => {
@@ -105,12 +101,10 @@ export function SelectSpacePanel({
     }
   }
 
-  const sizeOptions: Array<{ id: SizeCategory; label: string; dims: string; badge?: string }> = [
-    { id: 'small', label: 'Small', dims: '50 × 50 px' },
-    { id: 'medium', label: 'Medium', dims: '100 × 100 px', badge: 'Popular' },
-    { id: 'large', label: 'Large', dims: '200 × 200 px' },
-    { id: 'billboard', label: 'Billboard', dims: '300 × 200 px', badge: 'High Impact' },
-    { id: 'custom', label: 'Custom Grid', dims: `${dimensions.w} × ${dimensions.h} px` },
+  const sizeOptions: Array<{ id: SizeCategory; label: string; dims: string; badge?: string; desc: string }> = [
+    { id: 'small', label: 'Small', dims: '100 × 100 px', desc: 'Square Icon / Logo Badge' },
+    { id: 'medium', label: 'Medium', dims: '200 × 200 px', badge: 'Popular', desc: 'Standard Feature Ad' },
+    { id: 'large', label: 'Large', dims: '400 × 200 px', badge: 'High Impact', desc: 'Wide Premium Banner' },
   ]
 
   const durationPresets = [
@@ -164,62 +158,28 @@ export function SelectSpacePanel({
             <label className="text-sm font-['Outfit'] font-bold text-foreground">1. Select Ad Dimensions</label>
             <span className="text-xs text-muted-foreground font-['JetBrains_Mono']">{dimensions.w} × {dimensions.h} px</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {sizeOptions.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSelectedSize(s.id)}
-                className={`p-3 rounded-xl border text-left transition-all relative ${
+                className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
                   selectedSize === s.id
-                    ? 'border-[#6C5FE6] bg-[#6C5FE6]/10 text-foreground ring-1 ring-[#6C5FE6]'
+                    ? 'border-[#6C5FE6] bg-[#6C5FE6]/10 text-foreground ring-2 ring-[#6C5FE6]'
                     : 'border-black/8 bg-card hover:border-black/15 text-muted-foreground'
                 }`}
               >
                 {s.badge && (
-                  <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-['Outfit'] font-bold bg-[#6C5FE6] text-white">
+                  <span className="self-start mb-1 px-1.5 py-0.5 rounded text-[9px] font-['Outfit'] font-bold bg-[#6C5FE6] text-white">
                     {s.badge}
                   </span>
                 )}
                 <div className="font-['Outfit'] font-bold text-sm text-foreground">{s.label}</div>
-                <div className="font-['JetBrains_Mono'] text-xs text-muted-foreground mt-0.5">{s.dims}</div>
+                <div className="font-['JetBrains_Mono'] text-xs font-semibold text-[#6C5FE6] mt-0.5">{s.dims}</div>
+                <div className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{s.desc}</div>
               </button>
             ))}
           </div>
-
-          {selectedSize === 'custom' && (
-            <div className="mt-3 p-3.5 rounded-xl border border-[#6C5FE6]/20 bg-[#6C5FE6]/5 space-y-3">
-              <div>
-                <div className="flex justify-between text-xs font-['Outfit'] mb-1">
-                  <span>Width: {customWidth}px</span>
-                  <span className="text-muted-foreground">Min 50px - Max 400px</span>
-                </div>
-                <input
-                  type="range"
-                  min={50}
-                  max={400}
-                  step={10}
-                  value={customWidth}
-                  onChange={(e) => setCustomWidth(Number(e.target.value))}
-                  className="w-full accent-[#6C5FE6]"
-                />
-              </div>
-              <div>
-                <div className="flex justify-between text-xs font-['Outfit'] mb-1">
-                  <span>Height: {customHeight}px</span>
-                  <span className="text-muted-foreground">Min 50px - Max 350px</span>
-                </div>
-                <input
-                  type="range"
-                  min={50}
-                  max={350}
-                  step={10}
-                  value={customHeight}
-                  onChange={(e) => setCustomHeight(Number(e.target.value))}
-                  className="w-full accent-[#6C5FE6]"
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 2. Rental Duration */}

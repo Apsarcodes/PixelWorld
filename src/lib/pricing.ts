@@ -1,4 +1,4 @@
-export type SizeCategory = 'small' | 'medium' | 'large' | 'billboard' | 'custom'
+export type SizeCategory = 'small' | 'medium' | 'large'
 
 export interface PricingOptions {
   city?: string
@@ -48,11 +48,10 @@ const CITY_TIERS: Record<string, { tier: 'Tier 1' | 'Tier 1.5' | 'Tier 2'; mult:
   chandigarh: { tier: 'Tier 2', mult: 1.0 },
 }
 
-const SIZE_CONFIGS: Record<Exclude<SizeCategory, 'custom'>, { label: string; dims: string; baseDaily: number; mult: number }> = {
-  small: { label: 'Small', dims: '50 × 50 px', baseDaily: 25, mult: 0.6 },
-  medium: { label: 'Medium', dims: '100 × 100 px', baseDaily: 40, mult: 1.0 },
-  large: { label: 'Large', dims: '200 × 200 px', baseDaily: 80, mult: 2.0 },
-  billboard: { label: 'Billboard', dims: '300 × 200 px', baseDaily: 140, mult: 3.5 },
+export const SIZE_CONFIGS: Record<SizeCategory, { label: string; dims: string; width: number; height: number; baseDaily: number; mult: number }> = {
+  small: { label: 'Small', dims: '100 × 100 px', width: 100, height: 100, baseDaily: 50, mult: 1.0 },
+  medium: { label: 'Medium', dims: '200 × 200 px', width: 200, height: 200, baseDaily: 150, mult: 2.0 },
+  large: { label: 'Large', dims: '400 × 200 px', width: 400, height: 200, baseDaily: 300, mult: 3.5 },
 }
 
 const ADDON_PRICING: Record<string, { name: string; price: number }> = {
@@ -81,18 +80,14 @@ export function calculateDynamicPrice(options: PricingOptions = {}): PricingBrea
   }
 
   // Size base
-  let sizeCategory: SizeCategory = options.sizeCategory || 'medium'
-  let dims = '100 × 100 px'
-  let basePriceDaily = 40
+  const sizeCategory: SizeCategory =
+    options.sizeCategory === 'small' || options.sizeCategory === 'large'
+      ? options.sizeCategory
+      : 'medium'
 
-  if (sizeCategory === 'custom' && options.width && options.height) {
-    const area = options.width * options.height
-    basePriceDaily = Math.max(20, Math.round((area / 10000) * 35))
-    dims = `${options.width} × ${options.height} px`
-  } else if (sizeCategory !== 'custom' && SIZE_CONFIGS[sizeCategory]) {
-    basePriceDaily = SIZE_CONFIGS[sizeCategory].baseDaily
-    dims = SIZE_CONFIGS[sizeCategory].dims
-  }
+  const selectedConfig = SIZE_CONFIGS[sizeCategory]
+  const dims = selectedConfig.dims
+  const basePriceDaily = selectedConfig.baseDaily
 
   // Adjust daily rate for city tier
   const effectiveDailyRate = Math.round(basePriceDaily * cityInfo.mult)

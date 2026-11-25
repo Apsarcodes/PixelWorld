@@ -108,7 +108,8 @@ export async function POST(request: Request) {
     return Response.json(
       {
         user: result.user,
-        previewToken: isEmbeddedPreviewRuntime() ? result.token : undefined,
+        token: result.token,
+        previewToken: result.token,
       },
       { status: 201 },
     )

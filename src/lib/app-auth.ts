@@ -151,7 +151,9 @@ export function createAppAuth() {
       } catch {
         return null
       }
-      const cookieToken = (await cookies()).get(APP_SESSION_COOKIE)?.value
+      const cookieStore = await cookies()
+      const cookieToken =
+        cookieStore.get(APP_SESSION_COOKIE)?.value || cookieStore.get('payload-token')?.value
       const authorization = request?.headers.get('authorization')
       const headerToken =
         authorization?.startsWith('JWT ') || authorization?.startsWith('Bearer ')

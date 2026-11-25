@@ -29,7 +29,8 @@ export async function POST(request: Request) {
     const result = await appAuth.login(email, password)
     return Response.json({
       user: result.user,
-      previewToken: isEmbeddedPreviewRuntime() ? result.token : undefined,
+      token: result.token,
+      previewToken: result.token,
     })
   } catch {
     return Response.json({ error: 'Invalid email or password.' }, { status: 401 })

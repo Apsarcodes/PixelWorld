@@ -677,11 +677,9 @@ export function CreateAdScreen({
                     </thead>
                     <tbody className="font-['JetBrains_Mono']">
                       {[
-                        ['100×100', 'Icon / logo', '₹50'],
-                        ['200×200', 'Standard post', '₹200'],
-                        ['400×400', 'Feature ad', '₹800'],
-                        ['600×200', 'Banner strip', '₹600'],
-                        ['800×400', 'Billboard', '₹1,600'],
+                        ['Small (100×100)', 'Square Icon / Logo Badge', '₹50'],
+                        ['Medium (200×200)', 'Standard Feature Ad', '₹150'],
+                        ['Large (400×200)', 'Wide Premium Banner', '₹300'],
                       ].map(([sz, use, cost]) => (
                         <tr key={sz} className="border-b border-black/4 last:border-0">
                           <td className="py-1.5 text-[#6C5FE6] font-semibold">{sz}</td>

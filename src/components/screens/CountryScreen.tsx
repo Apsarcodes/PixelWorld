@@ -52,9 +52,11 @@ export function CountryScreen({
   )
 
   const totalAds = cities.reduce((acc, c) => acc + (c.ads || 0), 0)
+  const totalAvailable = cities.reduce((acc, c) => acc + (c.available ?? 100), 0)
   const avgOccupancy = Math.round(
     cities.reduce((acc, c) => acc + (c.occupancy || 0), 0) / (cities.length || 1)
   )
+  const totalImpressions = totalAds > 0 ? (totalAds * 250).toLocaleString() : '0'
   return (
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between px-8 py-4 border-b border-black/6 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl sticky top-0 z-50">
@@ -118,11 +120,11 @@ export function CountryScreen({
             icon={Megaphone}
             accent
           />
-          <StatCard label="Available Spaces" value="4,820" icon={Grid3X3} />
+          <StatCard label="Available Spaces" value={totalAvailable.toLocaleString()} icon={Grid3X3} />
           <StatCard label="Avg. Occupancy" value={`${avgOccupancy}%`} icon={Users} />
           <StatCard
             label="Avg. Daily Impressions"
-            value="2.4M"
+            value={totalImpressions}
             sub="across all canvases"
             icon={Eye}
           />

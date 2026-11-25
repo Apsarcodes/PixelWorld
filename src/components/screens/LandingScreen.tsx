@@ -80,7 +80,7 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
         <div className="flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-[#6C5FE6]/30 bg-[#6C5FE6]/10">
           <Sparkles size={14} className="text-[#6C5FE6]" />
           <span className="text-xs font-['Outfit'] font-semibold text-[#6C5FE6]">
-            120+ cities · 580K+ active ads · Real-time canvas
+            8 Metros across India · Real-time Canvas Billboards · Instant UPI Booking
           </span>
         </div>
 
@@ -91,14 +91,14 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
         </h1>
 
         <p className="text-center text-lg text-muted-foreground max-w-xl mb-10 font-['Inter'] leading-relaxed">
-          Rent interactive digital advertising space and put your brand on the world&#39;s visual
+          Rent interactive digital advertising space and put your brand on India&#39;s premier visual
           canvas. Location-based. Interactive. Unforgettable.
         </p>
 
         <div className="flex items-center gap-4 flex-wrap justify-center">
           <PrimaryBtn onClick={() => onNavigate('country')} className="text-base px-8 py-4">
             <Globe size={18} />
-            Explore the World
+            Explore Indian Metros
           </PrimaryBtn>
           <GhostBtn onClick={() => onNavigate('create-ad')} className="text-base px-8 py-4">
             <Megaphone size={18} />
@@ -109,9 +109,9 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
         {/* Stats bar */}
         <div className="flex items-center gap-8 mt-12 py-5 px-8 rounded-2xl bg-card border border-black/6 flex-wrap justify-center">
           {[
-            { v: '580K+', l: 'Active Ads Globally' },
-            { v: '120+', l: 'Cities Worldwide' },
-            { v: '48M+', l: 'Monthly Impressions' },
+            { v: '8 Metros', l: 'Across India' },
+            { v: '100% Real-time', l: 'Dynamic Canvas' },
+            { v: 'Direct UPI', l: 'Instant Booking' },
             { v: '99.9%', l: 'Canvas Uptime' },
           ].map((s) => (
             <div key={s.l} className="text-center">
@@ -128,10 +128,10 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
       <section className="px-6 pb-16 max-w-6xl mx-auto">
         <div className="text-center mb-10">
           <h2 className="font-['Outfit'] font-bold text-4xl text-foreground mb-3">
-            Live Activity Across the World
+            Active Canvases Across India
           </h2>
           <p className="text-muted-foreground font-['Inter']">
-            Click any country to explore its advertising canvas
+            Click any metro city to explore its interactive advertising canvas
           </p>
         </div>
 
@@ -142,25 +142,25 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
         {/* Country cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
           {[
-            { country: '🇮🇳 India', ads: '12,450', trend: '+18% this week', color: '#6C5FE6' },
-            { country: '🇺🇸 USA', ads: '18,340', trend: '+12% this week', color: '#EC4899' },
-            { country: '🇦🇪 UAE', ads: '4,230', trend: '+24% this week', color: '#F59E0B' },
-            { country: '🇬🇧 UK', ads: '9,200', trend: '+9% this week', color: '#00A882' },
+            { city: '🏛️ Chennai', state: 'Tamil Nadu', trend: 'Live Canvas', color: '#6C5FE6' },
+            { city: '🌊 Mumbai', state: 'Maharashtra', trend: 'Live Canvas', color: '#EC4899' },
+            { city: '🌳 Bangalore', state: 'Karnataka', trend: 'Live Canvas', color: '#00A882' },
+            { city: '🕌 Delhi NCR', state: 'Capital Region', trend: 'Live Canvas', color: '#F59E0B' },
           ].map((c) => (
             <div
-              key={c.country}
+              key={c.city}
               className="rounded-2xl border border-black/6 bg-card p-5 hover:border-black/10 transition-all cursor-pointer group"
               onClick={() => onNavigate('country')}
             >
-              <div className="text-xl mb-2 font-['Outfit'] font-bold">{c.country}</div>
-              <div className="text-2xl font-['Outfit'] font-black mb-1" style={{ color: c.color }}>
-                {c.ads}
+              <div className="text-xl mb-2 font-['Outfit'] font-bold">{c.city}</div>
+              <div className="text-sm font-['Outfit'] font-semibold text-muted-foreground mb-1">
+                {c.state}
               </div>
-              <div className="text-xs text-muted-foreground font-['JetBrains_Mono']">
-                Active Ads
+              <div className="text-xs font-['JetBrains_Mono'] text-muted-foreground">
+                100 Canvas Slots
               </div>
               <div className="text-xs text-[#00A882] mt-2 font-['Outfit'] font-semibold">
-                {c.trend}
+                {c.trend} →
               </div>
             </div>
           ))}

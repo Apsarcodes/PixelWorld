@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { ChevronDown, ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minus, Navigation, Phone, Play, Plus, RotateCcw, Search, Share2, ShoppingBag, X } from 'lucide-react'
-import type { Screen, CanvasTile, StoredCampaign } from '@/types/pixelworld'
+import type { Screen, CanvasTile, StoredCampaign, AppUser } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
 import { SelectSpacePanel, type SelectedSpaceConfig } from '@/components/screens/SelectSpacePanel'
@@ -24,12 +24,14 @@ export function CanvasScreen({
   onSelectCity,
   campaigns,
   onCampaignSaved,
+  user,
 }: {
   onNavigate: (s: Screen) => void
   selectedCity?: string
   onSelectCity?: (city: string) => void
   campaigns: StoredCampaign[]
   onCampaignSaved: (campaign: StoredCampaign) => void
+  user?: AppUser | null
 }) {
   const [zoom, setZoom] = useState(0.7)
   const [pan, setPan] = useState({ x: -120, y: -80 })
@@ -242,9 +244,22 @@ export function CanvasScreen({
           <PrimaryBtn small onClick={() => setShowCreate(true)}>
             + Post Your Ad
           </PrimaryBtn>
-          <button className="w-8 h-8 rounded-full bg-[#6C5FE6] flex items-center justify-center text-white text-xs font-bold font-['Outfit']">
-            A
-          </button>
+          {user ? (
+            <button
+              onClick={() => onNavigate('dashboard')}
+              title={`${user.email} — Click for Dashboard`}
+              className="w-8 h-8 rounded-full bg-[#6C5FE6] hover:bg-[#5b4fd6] flex items-center justify-center text-white text-xs font-bold font-['Outfit'] transition-all cursor-pointer shadow-sm"
+            >
+              {user.firstName ? user.firstName[0].toUpperCase() : user.email[0].toUpperCase()}
+            </button>
+          ) : (
+            <button
+              onClick={() => onNavigate('login')}
+              className="px-3 py-1.5 rounded-xl bg-[#6C5FE6]/10 hover:bg-[#6C5FE6]/20 text-[#6C5FE6] text-xs font-['Outfit'] font-bold transition-colors cursor-pointer"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </header>
 

@@ -19,8 +19,21 @@ import { UserProfileScreen } from '@/components/screens/UserProfileScreen'
 import { isOwnerEmail } from '@/constants/auth'
 
 export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | null }) {
-  const [screen, setScreen] = useState<Screen>('login')
   const [currentUser, setCurrentUser] = useState<AppUser | null>(initialUser)
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const urlScreen = urlParams.get('screen') as Screen
+      if (urlScreen) return urlScreen
+
+      const saved = localStorage.getItem('pixelworld_active_screen') as Screen
+      if (saved && saved !== 'login' && saved !== 'signup') {
+        return saved
+      }
+    }
+    return initialUser ? 'canvas' : 'landing'
+  })
+
   const [selectedCity, setSelectedCity] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('pixelworld_selected_city') || 'mumbai'
@@ -56,29 +69,37 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       }
     }
 
-    if (!initialUser) {
-      fetch('/api/app-auth/me', {
-        credentials: 'include',
-        cache: 'no-store',
-        headers: previewAuthorizationHeaders(),
-      })
-        .then((response) => response.json())
-        .then((result) => {
-          if (result.user) {
-            setCurrentUser(result.user)
-            setScreen('dashboard')
-          } else {
-            setCurrentUser(null)
-            setScreen('login')
+    // Always sync current user state with session
+    fetch('/api/app-auth/me', {
+      credentials: 'include',
+      cache: 'no-store',
+      headers: previewAuthorizationHeaders(),
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => {
+        if (result?.user) {
+          setCurrentUser(result.user)
+          // Restore saved screen or stay on current
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('pixelworld_active_screen') as Screen
+            if (saved && saved !== 'login' && saved !== 'signup') {
+              setScreen(saved)
+            }
           }
-        })
-        .catch(() => {
+        } else if (!initialUser) {
           setCurrentUser(null)
-          setScreen('login')
-        })
-    } else {
-      setScreen('dashboard')
-    }
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('pixelworld_active_screen')
+          }
+          setScreen('landing')
+        }
+      })
+      .catch(() => {
+        if (!initialUser) {
+          setCurrentUser(null)
+          setScreen('landing')
+        }
+      })
   }, [initialUser])
 
   useEffect(() => {
@@ -98,8 +119,12 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
   }, [currentUser])
 
   const nav = (nextScreen: Screen) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pixelworld_active_screen', nextScreen)
+    }
+
     if (!currentUser) {
-      if (nextScreen !== 'login' && nextScreen !== 'signup') {
+      if (nextScreen !== 'login' && nextScreen !== 'signup' && nextScreen !== 'landing') {
         setScreen('login')
         return
       }
@@ -162,6 +187,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
           onSelectCity={handleSelectCity}
           campaigns={campaigns}
           onCampaignSaved={handleCampaignSaved}
+          user={currentUser}
         />
       )}
       {screen === 'create-ad' && (
@@ -185,8 +211,24 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       {screen === 'admin' && <AdminDashboard onNavigate={nav} />}
       {screen === 'admin-mod' && <AdminModeration onNavigate={nav} />}
       {screen === 'admin-canvas' && <AdminCanvasScreen onNavigate={nav} />}
-      {screen === 'login' && <LoginScreen onNavigate={nav} onAuthenticated={setCurrentUser} />}
-      {screen === 'signup' && <SignupScreen onNavigate={nav} onAuthenticated={setCurrentUser} />}
+      {screen === 'login' && (
+        <LoginScreen
+          onNavigate={nav}
+          onAuthenticated={(user) => {
+            setCurrentUser(user)
+            nav('canvas')
+          }}
+        />
+      )}
+      {screen === 'signup' && (
+        <SignupScreen
+          onNavigate={nav}
+          onAuthenticated={(user) => {
+            setCurrentUser(user)
+            nav('canvas')
+          }}
+        />
+      )}
       {screen === 'profile' && currentUser && (
         <UserProfileScreen onNavigate={nav} user={currentUser} onLogout={logout} />
       )}

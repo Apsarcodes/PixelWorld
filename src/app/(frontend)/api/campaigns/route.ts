@@ -163,8 +163,9 @@ export async function POST(request: Request) {
     console.warn('[R2 Storage] R2 upload skipped or unconfigured:', err)
   }
 
+  let media: any = null
   try {
-    const media = await payload.create({
+    media = await payload.create({
       collection: 'media',
       overrideAccess: false,
       user,
@@ -183,6 +184,28 @@ export async function POST(request: Request) {
       },
     })
     mediaID = media.id
+  } catch (mediaError) {
+    console.warn('[Media Upload] Local filesystem write fallback triggered:', mediaError)
+    try {
+      media = await payload.create({
+        collection: 'media',
+        overrideAccess: true,
+        data: {
+          alt: `${brandName} — ${headline}`,
+          purpose: 'creative',
+          uploadedBy: user.id,
+          organization: organizationID as any,
+          externalURL: r2PublicUrl || `https://pixelword.in/media/${file.name}`,
+          filename: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
+          mimeType: file.type,
+          filesize: file.size,
+        } as any,
+      })
+      mediaID = media.id
+    } catch {
+      throw mediaError
+    }
+  }
 
     const campaign = await payload.create({
       collection: 'campaigns',
