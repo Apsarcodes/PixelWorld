@@ -1,6 +1,7 @@
 import { appAuth } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { sendOrderConfirmationEmail } from '@/lib/email/resend'
 
 export async function POST(request: Request) {
   try {
@@ -147,6 +148,22 @@ export async function POST(request: Request) {
       },
       overrideAccess: true,
     }).catch(() => {})
+
+    // 6. Send Order Confirmation & GST Tax Invoice Email via Resend
+    if (user.email) {
+      sendOrderConfirmationEmail({
+        to: user.email,
+        customerName: (user as any).name || user.email.split('@')[0],
+        invoiceNumber,
+        campaignName: String(body.campaignName || `Campaign #${campaignId || ''}`),
+        city: String(body.city || 'Chennai'),
+        days: Number(body.days) || 7,
+        subtotal,
+        gstAmount,
+        totalAmount: Number(body.amount) || subtotal + gstAmount,
+        utr: utr || undefined,
+      }).catch((err) => console.error('[Order Confirmation Email Error]', err))
+    }
 
     return Response.json({
       ok: true,
