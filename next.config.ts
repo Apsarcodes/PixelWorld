@@ -82,11 +82,15 @@ const nextConfig: NextConfig = {
     // browser origin is the public sandbox host while `x-forwarded-host` points
     // at the local dev server. Allow only that exact platform-provisioned host.
     serverActions: {
-      allowedOrigins: makePublicPreviewOrigin ? [makePublicPreviewOrigin] : [],
+      allowedOrigins: [
+        ...(makePublicPreviewOrigin ? [makePublicPreviewOrigin] : []),
+        'pixelworld.in',
+        'www.pixelworld.in',
+      ],
     },
   },
   env: {
-    NEXT_PUBLIC_SITE_URL: process.env.FIGMA_PUBLIC_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || process.env.FIGMA_PUBLIC_URL || 'http://localhost:3000',
     // NOTE: Do not add FIGMA_OAUTH_CLIENT_SECRET, FIGMA_CONTENT_API_ACCESS_KEY,
     // or any other credential here. Values placed in `env` are inlined into
     // the JavaScript bundle by Next.js at build time and become readable by
