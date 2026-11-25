@@ -215,3 +215,38 @@ export async function sendPasswordResetEmail(params: {
     html,
   })
 }
+
+/**
+ * Sends 6-Digit Password Reset OTP Verification Code Email
+ */
+export async function sendPasswordResetOtpEmail(params: {
+  to: string
+  otp: string
+}) {
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; padding: 40px 20px; color: #1e293b;">
+  <div style="max-width: 480px; margin: auto; background: white; padding: 36px 32px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; background: #6C5FE6; color: white; width: 44px; height: 44px; line-height: 44px; border-radius: 12px; font-weight: 800; font-size: 20px; margin-bottom: 12px;">PW</div>
+      <h2 style="color: #1e293b; margin: 0; font-size: 22px; font-weight: 800;">Password Reset Code</h2>
+      <p style="color: #64748b; font-size: 14px; margin-top: 6px;">Use the 6-digit verification code below to reset your PixelWorld account password:</p>
+    </div>
+    <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center; margin: 28px 0; border: 1px dashed #cbd5e1;">
+      <span style="font-size: 34px; font-weight: 900; letter-spacing: 10px; color: #6C5FE6; font-family: monospace;">${params.otp}</span>
+    </div>
+    <p style="color: #64748b; font-size: 13px; line-height: 1.6; text-align: center; margin-bottom: 0;">
+      This code is valid for <strong>10 minutes</strong>.<br>If you did not request this, you can safely ignore this email.
+    </p>
+  </div>
+</body>
+</html>
+`
+
+  return sendEmail({
+    to: params.to,
+    subject: `Your PixelWorld Password Reset Code: ${params.otp}`,
+    html,
+  })
+}

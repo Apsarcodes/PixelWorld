@@ -22,6 +22,7 @@ export function LoginScreen({
   const [error, setError] = useState('')
   // forgot / OTP / reset state
   const [forgotEmail, setForgotEmail] = useState('')
+  const [resetToken, setResetToken] = useState('')
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''))
   const [otpError, setOtpError] = useState('')
   const [resendTimer, setResendTimer] = useState(30)
@@ -76,17 +77,33 @@ export function LoginScreen({
     }
   }
 
-  const handleForgot = () => {
-    if (!forgotEmail) {
-      setError('Please enter your email address.')
+  const handleForgot = async () => {
+    if (!forgotEmail || !forgotEmail.includes('@')) {
+      setError('Please enter a valid email address.')
       return
     }
-    setError(
-      'Password reset by email is not available yet. Please contact your account administrator.',
-    )
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/app-auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to send reset code.')
+        return
+      }
+      setView('otp')
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const code = otp.join('')
     if (code.length < 6) {
       setOtpError('Please enter the full 6-digit code.')
@@ -94,13 +111,27 @@ export function LoginScreen({
     }
     setOtpError('')
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      const res = await fetch('/api/app-auth/verify-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, otp: code }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setOtpError(data.error || 'Invalid verification code.')
+        return
+      }
+      setResetToken(data.resetToken)
       setView('reset')
-    }, 1000)
+    } catch {
+      setOtpError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!newPw || newPw !== confirmNewPw) {
       setError('Passwords do not match.')
       return
@@ -111,10 +142,27 @@ export function LoginScreen({
     }
     setError('')
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      const res = await fetch('/api/app-auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotEmail,
+          resetToken,
+          password: newPw,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to reset password.')
+        return
+      }
       setView('reset-success')
-    }, 1200)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const leftPanel = (
@@ -275,8 +323,7 @@ export function LoginScreen({
                 Forgot password?
               </h1>
               <p className="text-muted-foreground font-['Inter'] text-sm">
-                Email password recovery is not configured yet. Enter your account email to view the
-                available support option.
+                Enter your registered account email. We will send a 6-digit verification code to reset your password.
               </p>
             </div>
 
@@ -299,36 +346,22 @@ export function LoginScreen({
             <PrimaryBtn full onClick={handleForgot} disabled={loading}>
               {loading ? (
                 <>
-                  <RefreshCw size={15} className="animate-spin" /> Checking…
+                  <RefreshCw size={15} className="animate-spin" /> Sending Code…
                 </>
               ) : (
                 <>
-                  Continue <ArrowRight size={15} />
+                  Send Verification Code <ArrowRight size={15} />
                 </>
               )}
             </PrimaryBtn>
 
             <div className="mt-6 p-4 rounded-xl bg-[#EDF0F8] border border-black/6">
               <div className="text-xs font-['Outfit'] font-semibold text-foreground mb-1">
-                Password recovery
+                Secure Account Recovery
               </div>
-              <ol className="space-y-1">
-                {[
-                  'Email delivery will be added in a later integration',
-                  'No reset codes are generated or simulated',
-                  'Contact your account administrator for assistance',
-                ].map((s, i) => (
-                  <li
-                    key={i}
-                    className="text-xs text-muted-foreground font-['Inter'] flex items-start gap-2"
-                  >
-                    <span className="w-4 h-4 rounded-full bg-[#6C5FE6]/15 text-[#6C5FE6] text-[9px] font-['JetBrains_Mono'] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      {i + 1}
-                    </span>
-                    {s}
-                  </li>
-                ))}
-              </ol>
+              <p className="text-xs text-muted-foreground font-['Inter'] leading-relaxed">
+                Verification codes expire after 10 minutes. Check your inbox and spam folder for the email from PixelWorld.
+              </p>
             </div>
           </div>
         </div>
