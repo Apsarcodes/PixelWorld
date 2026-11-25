@@ -86,6 +86,8 @@ const nextConfig: NextConfig = {
         ...(makePublicPreviewOrigin ? [makePublicPreviewOrigin] : []),
         'pixelworld.in',
         'www.pixelworld.in',
+        'pixelword.in',
+        'www.pixelword.in',
       ],
     },
   },
