@@ -78,6 +78,16 @@ const baseConfig = {
 
 const usePostgres = Boolean(process.env.DATABASE_URI) || !process.env.FIGMA_EID
 
+function getDatabaseUri(): string {
+  let uri = process.env.DATABASE_URI || 'postgresql://postgres:postgres@127.0.0.1:5432/pixelworld'
+  // In serverless environments (Vercel), convert Supabase pooler from Session mode (5432, max 15 clients)
+  // to Transaction mode (6543, multiplexed pooler) to prevent EMAXCONNSESSION connection exhaustion.
+  if (uri.includes('.pooler.supabase.com:5432')) {
+    uri = uri.replace('.pooler.supabase.com:5432', '.pooler.supabase.com:6543')
+  }
+  return uri
+}
+
 export default usePostgres
   ? buildConfig({
       ...baseConfig,
@@ -85,9 +95,10 @@ export default usePostgres
       secret: process.env.PAYLOAD_SECRET || 'dev_insecure_payload_secret_must_be_changed_in_prod_32bytes',
       db: postgresAdapter({
         pool: {
-          connectionString:
-            process.env.DATABASE_URI ||
-            'postgresql://postgres:postgres@127.0.0.1:5432/pixelworld',
+          connectionString: getDatabaseUri(),
+          max: process.env.NODE_ENV === 'production' ? 2 : 10,
+          idleTimeoutMillis: 5000,
+          connectionTimeoutMillis: 10000,
           ssl:
             process.env.DATABASE_URI?.includes('supabase.co') ||
             process.env.DATABASE_URI?.includes('supabase.com')
