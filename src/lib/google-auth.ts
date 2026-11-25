@@ -13,13 +13,21 @@ export interface GoogleUserProfile {
   sub?: string
 }
 
+export function getSiteUrl(): string {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, '')
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  if (process.env.NODE_ENV === 'production') return 'https://pixelword.in'
+  return 'http://localhost:3000'
+}
+
 export function isGoogleOAuthConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
 }
 
 export function getGoogleRedirectUri(): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  return `${siteUrl.replace(/\/+$/, '')}/api/app-auth/google/callback`
+  const siteUrl = getSiteUrl()
+  return `${siteUrl}/api/app-auth/google/callback`
 }
 
 export function generateOAuthState(): string {
@@ -27,9 +35,9 @@ export function generateOAuthState(): string {
 }
 
 export function getGoogleAuthorizationUrl(state: string): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = getSiteUrl()
   if (!isGoogleOAuthConfigured()) {
-    return `${siteUrl.replace(/\/+$/, '')}/?auth_error=google_oauth_credentials_missing`
+    return `${siteUrl}/?auth_error=google_oauth_credentials_missing`
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!

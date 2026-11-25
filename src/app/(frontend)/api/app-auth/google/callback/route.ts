@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { exchangeGoogleCodeForProfile, upsertGoogleAccount } from '@/lib/google-auth'
+import { exchangeGoogleCodeForProfile, upsertGoogleAccount, getSiteUrl } from '@/lib/google-auth'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const state = url.searchParams.get('state')
   const oauthError = url.searchParams.get('error')
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = getSiteUrl()
 
   if (oauthError) {
     console.error('Google OAuth error returned from provider:', oauthError)
