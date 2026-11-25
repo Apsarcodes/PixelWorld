@@ -22,6 +22,7 @@ export type StoredCampaign = {
   startsAt: string
   endsAt: string
   status: 'draft' | 'published'
+  createdAt?: string
   city?: string
   slotId?: number | string
   slotIdentifier?: string
@@ -85,6 +86,7 @@ export interface CanvasTile {
 
 export interface CityCard {
   name: string
+  slug?: string
   ads: number
   available: number
   occupancy: number

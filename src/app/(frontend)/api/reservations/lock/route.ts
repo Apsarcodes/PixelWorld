@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         : user.defaultOrganization || user.id
 
     const lockExpiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15-minute lock
-    const pricing = paymentService.calculatePrice(durationDays)
+    const pricing = paymentService.calculatePrice({ durationDays })
     const reservationCode = `RES-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
 
     let reservationRecord = {

@@ -101,7 +101,7 @@ export const Users: CollectionConfig = {
       access: {
         create: () => true,
         read: () => true,
-        update: ({ req }) => req.user?.role === 'admin' || req.user?.collection === 'admins',
+        update: ({ req }) => (req.user as any)?.role === 'admin' || req.user?.collection === 'admins',
       },
     },
     { name: 'company', type: 'text' },

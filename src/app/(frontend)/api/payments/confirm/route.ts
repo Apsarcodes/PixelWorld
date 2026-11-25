@@ -116,8 +116,8 @@ export async function POST(request: Request) {
         collection: 'campaigns',
         id: campaignId,
         data: {
-          status: 'published',
-        },
+          _status: 'published',
+        } as any,
         overrideAccess: true,
       }).catch(() => {})
     }

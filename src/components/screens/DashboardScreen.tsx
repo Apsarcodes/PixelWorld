@@ -686,9 +686,12 @@ export function DashboardScreen({
                 </div>
 
                 <div className="pt-2">
-                  <PrimaryBtn small type="submit">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-[#6C5FE6] text-white text-xs font-['Outfit'] font-bold hover:bg-[#5b4fd6] transition-all cursor-pointer shadow-sm"
+                  >
                     Save Profile Changes
-                  </PrimaryBtn>
+                  </button>
                 </div>
               </form>
             </div>
