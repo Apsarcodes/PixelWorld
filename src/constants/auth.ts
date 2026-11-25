@@ -1,7 +1,7 @@
 export const ADMIN_EMAILS: readonly string[] = Object.freeze([
   'mohamedapsarasif761@gmail.com',
   'rafimmedia@gmail.com',
-  'apsarcodes@gmail.com',
+  'apsarworks@gmail.com',
 ])
 
 export function isOwnerEmail(email?: string | null): boolean {
