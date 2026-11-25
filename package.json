@@ -13,6 +13,7 @@
     "payload": "NODE_OPTIONS=--no-deprecation payload"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1176.0",
     "@payloadcms/db-postgres": "4.0.0-beta.4",
     "@payloadcms/figma": "1.0.0-beta.1",
     "@payloadcms/next": "4.0.0-beta.4",

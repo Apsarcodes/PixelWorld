@@ -148,6 +148,21 @@ export async function POST(request: Request) {
     )
   }
 
+  const fileBuffer = Buffer.from(await file.arrayBuffer())
+  let r2PublicUrl: string | null = null
+
+  // Upload to Cloudflare R2 if configured
+  try {
+    const { uploadToR2 } = await import('@/lib/storage/r2')
+    r2PublicUrl = await uploadToR2({
+      buffer: fileBuffer,
+      filename: file.name,
+      mimeType: file.type,
+    })
+  } catch (err) {
+    console.warn('[R2 Storage] R2 upload skipped or unconfigured:', err)
+  }
+
   try {
     const media = await payload.create({
       collection: 'media',
@@ -158,9 +173,10 @@ export async function POST(request: Request) {
         purpose: 'creative',
         uploadedBy: user.id,
         organization: organizationID as any,
+        externalURL: r2PublicUrl || undefined,
       },
       file: {
-        data: Buffer.from(await file.arrayBuffer()),
+        data: fileBuffer,
         mimetype: file.type,
         name: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
         size: file.size,

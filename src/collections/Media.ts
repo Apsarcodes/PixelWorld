@@ -1,4 +1,7 @@
 import type { Access, CollectionBeforeValidateHook, CollectionConfig } from 'payload'
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
 
 import { createFolderField, createTagField } from 'payload'
 import {
@@ -7,6 +10,20 @@ import {
   isPayloadAdmin,
   organizationScopedAccess,
 } from '@/access/organization-access'
+
+// In serverless environments (Vercel, AWS Lambda), write uploads to OS temp directory
+const uploadDir =
+  process.env.VERCEL || process.env.NODE_ENV === 'production'
+    ? path.resolve(os.tmpdir(), 'media')
+    : path.resolve(process.cwd(), 'media')
+
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true })
+  }
+} catch {
+  // Gracefully continue in environments where directory already exists
+}
 
 const assignMediaOwnership: CollectionBeforeValidateHook = ({ data, operation, req }) => {
   if (isPayloadAdmin(req)) return data
@@ -47,12 +64,27 @@ export const Media: CollectionConfig = {
   },
   hooks: {
     beforeValidate: [assignMediaOwnership],
+    afterRead: [
+      ({ doc }) => {
+        if (doc && (doc as any).externalURL) {
+          doc.url = (doc as any).externalURL
+        }
+        return doc
+      },
+    ],
   },
   fields: [
     {
       name: 'alt',
       type: 'text',
       required: true,
+    },
+    {
+      name: 'externalURL',
+      type: 'text',
+      admin: {
+        readOnly: true,
+      },
     },
     {
       name: 'purpose',
@@ -90,6 +122,7 @@ export const Media: CollectionConfig = {
     createTagField({ relationTo: 'tags' }),
   ],
   upload: {
+    staticDir: uploadDir,
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
     modifyResponseHeaders: ({ headers }) => {
       headers.set('Cache-Control', 'private, no-store')
