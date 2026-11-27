@@ -37,7 +37,7 @@ export const Invoices: CollectionConfig = {
       name: 'campaign',
       type: 'relationship',
       relationTo: 'campaigns',
-      required: true,
+      required: false,
       index: true,
     },
     {

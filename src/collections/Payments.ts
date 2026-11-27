@@ -51,14 +51,14 @@ export const Payments: CollectionConfig = {
       name: 'reservation',
       type: 'relationship',
       relationTo: 'reservations' as any,
-      required: true,
+      required: false,
       index: true,
     },
     {
       name: 'campaign',
       type: 'relationship',
       relationTo: 'campaigns',
-      required: true,
+      required: false,
       index: true,
     },
     {

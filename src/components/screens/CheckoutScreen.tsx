@@ -170,6 +170,9 @@ export function CheckoutScreen({
           gstAmount: paymentDetails.gstAmount,
           campaignId: campaign?.id,
           slotId: campaign?.slotId,
+          campaignName: campaign?.name || campaign?.brandName,
+          city: campaign?.city,
+          days: campaign?.durationDays,
         }),
       })
 
@@ -507,6 +510,13 @@ export function CheckoutScreen({
                 </a>
               </div>
             </div>
+
+            {error && (
+              <div className="p-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 font-['Inter'] flex items-center gap-2">
+                <AlertTriangle size={14} className="shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
             {/* Direct UTR Confirmation Card */}
             <div className="p-3.5 rounded-2xl bg-[#6C5FE6]/5 border border-[#6C5FE6]/20 space-y-2.5 mb-2">
