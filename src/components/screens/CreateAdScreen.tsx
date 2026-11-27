@@ -5,6 +5,7 @@ import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UICompo
 import { AdPreviewScreen } from '@/components/screens/AdPreviewScreen'
 import { CheckoutScreen } from '@/components/screens/CheckoutScreen'
 import { previewAuthorizationHeaders } from '@/lib/session'
+import { calculateDynamicPrice, SIZE_CONFIGS, type SizeCategory } from '@/lib/pricing'
 
 export function CreateAdScreen({
   onBack,
@@ -37,9 +38,18 @@ export function CreateAdScreen({
   const [brandName, setBrandName] = useState(initialCampaign?.brandName ?? '')
   const [headline, setHeadline] = useState(initialCampaign?.headline ?? '')
   const [desc, setDesc] = useState(initialCampaign?.description ?? '')
-  // Space config state
-  const [adWidth, setAdWidth] = useState(initialDimensions?.width ?? initialCampaign?.width ?? 200)
-  const [adHeight, setAdHeight] = useState(initialDimensions?.height ?? initialCampaign?.height ?? 200)
+  // Strict 3 Standard Ad Formats
+  const [sizeCategory, setSizeCategory] = useState<'small' | 'medium' | 'large'>(() => {
+    if (initialDimensions?.sizeCategory === 'small' || initialCampaign?.sizeCategory === 'small') return 'small'
+    if (initialDimensions?.sizeCategory === 'large' || initialCampaign?.sizeCategory === 'large') return 'large'
+    return 'medium'
+  })
+  const [adWidth, setAdWidth] = useState(() =>
+    sizeCategory === 'small' ? 100 : sizeCategory === 'large' ? 400 : 200
+  )
+  const [adHeight, setAdHeight] = useState(() =>
+    sizeCategory === 'small' ? 100 : sizeCategory === 'large' ? 200 : 200
+  )
   const today = new Date().toISOString().split('T')[0]
   const defaultTo = new Date(Date.now() + (initialDimensions?.duration ?? 30) * 86400000).toISOString().split('T')[0]
   const [dateFrom, setDateFrom] = useState(initialCampaign?.startsAt?.split('T')[0] ?? today)
@@ -75,7 +85,6 @@ export function CreateAdScreen({
   const handleDateFromChange = (val: string) => {
     setDateFrom(val)
     setDurationPreset('custom')
-    // recalculate end date if a non-custom preset was active
   }
 
   const handleDateToChange = (val: string) => {
@@ -88,16 +97,15 @@ export function CreateAdScreen({
     const diff = new Date(dateTo).getTime() - new Date(dateFrom).getTime()
     return Math.max(0, Math.round(diff / 86400000))
   }, [dateFrom, dateTo])
-  const unitW = Math.round(adWidth / 100)
-  const unitH = Math.round(adHeight / 100)
-  const totalUnits = unitW * unitH
-  const dailyRate = totalUnits * 50
-  const totalCost = dailyRate * days
 
-  const adjustDim = (dim: 'w' | 'h', delta: number) => {
-    if (dim === 'w') setAdWidth((v) => Math.min(800, Math.max(100, v + delta)))
-    else setAdHeight((v) => Math.min(800, Math.max(100, v + delta)))
-  }
+  // Dynamic server-matched pricing
+  const dynamicPrice = React.useMemo(() => {
+    return calculateDynamicPrice({
+      city: initialDimensions?.city || initialCampaign?.city || 'Chennai',
+      sizeCategory,
+      durationDays: days,
+    })
+  }, [sizeCategory, days, initialDimensions, initialCampaign])
 
   const steps = ['Space & Details', 'Preview', 'Payment']
 
@@ -142,11 +150,11 @@ export function CreateAdScreen({
         city: initialDimensions?.city || initialCampaign?.city || 'Chennai',
         slotId: initialDimensions?.slotId || initialCampaign?.slotId || 1,
         slotIdentifier: initialDimensions?.slotIdentifier || initialCampaign?.slotIdentifier,
-        sizeCategory: (initialDimensions?.sizeCategory as any) || initialCampaign?.sizeCategory || 'medium',
-        durationDays: Number(durationPreset) || initialDimensions?.duration || 30,
-        subtotal: initialDimensions?.subtotal || initialCampaign?.subtotal,
-        gstAmount: initialDimensions?.gstAmount || initialCampaign?.gstAmount,
-        totalAmount: initialDimensions?.totalAmount || initialCampaign?.totalAmount,
+        sizeCategory,
+        durationDays: days || Number(durationPreset) || 30,
+        subtotal: dynamicPrice.subtotal,
+        gstAmount: dynamicPrice.gstAmount,
+        totalAmount: dynamicPrice.totalAmount,
         addons: (initialDimensions?.addons as any) || initialCampaign?.addons,
       }
       setSavedCampaign(campaign)
@@ -238,81 +246,87 @@ export function CreateAdScreen({
                   </div>
                 </div>
 
-                {/* Ad size picker */}
+                {/* Ad size picker - Strict 3 Standard Formats */}
                 <div className="rounded-2xl border border-black/8 bg-card p-6">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-['Outfit'] font-bold text-base text-foreground">Ad Size</h3>
+                    <h3 className="font-['Outfit'] font-bold text-base text-foreground">Standard Ad Formats</h3>
                     <span className="text-xs text-muted-foreground font-['JetBrains_Mono'] bg-[#EDF0F8] px-2 py-1 rounded-lg">
-                      ₹50 per 100 × 100 px / day
+                      3 Certified Sizes
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground font-['Inter'] mb-5">
-                    Choose width and height in 100 px steps. Price scales with the area you select.
+                    Select one of our 3 high-impact canvas placements.
                   </p>
 
-                  <div className="grid grid-cols-2 gap-4 mb-5">
-                    {(['Width', 'Height'] as const).map((label) => {
-                      const val = label === 'Width' ? adWidth : adHeight
-                      const dim = label === 'Width' ? 'w' : 'h'
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      {
+                        key: 'small' as const,
+                        name: 'Small',
+                        dims: '100 × 100 px',
+                        w: 100,
+                        h: 100,
+                        use: 'Square Icon / Logo Badge',
+                        base: '₹50/day',
+                      },
+                      {
+                        key: 'medium' as const,
+                        name: 'Medium',
+                        dims: '200 × 200 px',
+                        w: 200,
+                        h: 200,
+                        use: 'Standard Feature Ad',
+                        base: '₹150/day',
+                        popular: true,
+                      },
+                      {
+                        key: 'large' as const,
+                        name: 'Large',
+                        dims: '400 × 200 px',
+                        w: 400,
+                        h: 200,
+                        use: 'Wide Premium Banner',
+                        base: '₹300/day',
+                      },
+                    ].map((fmt) => {
+                      const isSelected = sizeCategory === fmt.key
                       return (
-                        <div key={label}>
-                          <div className="text-xs font-['Outfit'] font-semibold text-muted-foreground mb-2">
-                            {label}
+                        <button
+                          key={fmt.key}
+                          type="button"
+                          onClick={() => {
+                            setSizeCategory(fmt.key)
+                            setAdWidth(fmt.w)
+                            setAdHeight(fmt.h)
+                          }}
+                          className={`relative text-left p-4 rounded-xl border-2 transition-all ${
+                            isSelected
+                              ? 'border-[#6C5FE6] bg-[#6C5FE6]/5 shadow-sm'
+                              : 'border-black/8 bg-[#F8FAFC] hover:border-[#6C5FE6]/40 hover:bg-white'
+                          }`}
+                        >
+                          {fmt.popular && (
+                            <span className="absolute -top-2.5 right-3 bg-[#6C5FE6] text-white text-[10px] font-['Outfit'] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                              Popular
+                            </span>
+                          )}
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-['Outfit'] font-bold text-sm text-foreground">
+                              {fmt.name}
+                            </span>
+                            <span className="font-['JetBrains_Mono'] text-xs font-bold text-[#6C5FE6]">
+                              {fmt.base}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => adjustDim(dim, -100)}
-                              disabled={val <= 100}
-                              className="w-9 h-9 rounded-xl border border-black/10 bg-[#F0F2F8] hover:bg-[#E4E7F5] flex items-center justify-center text-foreground disabled:opacity-30 transition-all"
-                            >
-                              <Minus size={14} />
-                            </button>
-                            <div className="flex-1 h-9 rounded-xl border border-[#6C5FE6]/30 bg-[#6C5FE6]/5 flex items-center justify-center">
-                              <span className="font-['JetBrains_Mono'] font-bold text-[#6C5FE6] text-sm">
-                                {val} px
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => adjustDim(dim, 100)}
-                              disabled={val >= 800}
-                              className="w-9 h-9 rounded-xl border border-black/10 bg-[#F0F2F8] hover:bg-[#E4E7F5] flex items-center justify-center text-foreground disabled:opacity-30 transition-all"
-                            >
-                              <Plus size={14} />
-                            </button>
+                          <div className="font-['JetBrains_Mono'] text-xs text-muted-foreground mb-1">
+                            {fmt.dims}
                           </div>
-                        </div>
+                          <p className="text-[11px] text-muted-foreground font-['Inter'] leading-tight">
+                            {fmt.use}
+                          </p>
+                        </button>
                       )
                     })}
-                  </div>
-
-                  {/* Quick presets */}
-                  <div className="text-xs font-['Outfit'] font-semibold text-muted-foreground mb-2">
-                    Quick Presets
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { label: 'Small', w: 100, h: 100 },
-                      { label: 'Standard', w: 200, h: 200 },
-                      { label: 'Medium', w: 300, h: 300 },
-                      { label: 'Large', w: 400, h: 400 },
-                      { label: 'Wide Banner', w: 600, h: 200 },
-                      { label: 'Tall', w: 200, h: 400 },
-                      { label: 'Billboard', w: 800, h: 400 },
-                    ].map((p) => (
-                      <button
-                        key={p.label}
-                        onClick={() => {
-                          setAdWidth(p.w)
-                          setAdHeight(p.h)
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-['Outfit'] font-semibold transition-all border ${adWidth === p.w && adHeight === p.h ? 'bg-[#6C5FE6] text-white border-[#6C5FE6]' : 'bg-[#F0F2F8] text-muted-foreground border-black/5 hover:text-foreground hover:bg-[#E4E7F5]'}`}
-                      >
-                        {p.label}
-                        <span className="ml-1.5 opacity-60 font-['JetBrains_Mono'] text-[10px]">
-                          {p.w}×{p.h}
-                        </span>
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -635,17 +649,27 @@ export function CreateAdScreen({
                   </div>
                 </div>
 
-                {/* Cost breakdown */}
+                {/* Dynamic Cost breakdown */}
                 <div className="rounded-2xl border border-[#6C5FE6]/20 bg-[#6C5FE6]/4 p-5 space-y-3">
-                  <div className="text-sm font-['Outfit'] font-bold text-foreground">
-                    Cost Breakdown
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-['Outfit'] font-bold text-foreground">
+                      Dynamic Cost Breakdown
+                    </span>
+                    <span className="text-[10px] font-['JetBrains_Mono'] px-2 py-0.5 rounded bg-[#6C5FE6]/10 text-[#6C5FE6] font-semibold">
+                      {dynamicPrice.cityTier} ({dynamicPrice.cityMultiplier}×)
+                    </span>
                   </div>
                   <div className="space-y-2 text-sm">
                     {[
-                      ['Size', `${adWidth} × ${adHeight} px`],
-                      ['Area units', `${unitW} × ${unitH} = ${totalUnits} units`],
-                      ['Rate', `₹50 × ${totalUnits} = ₹${dailyRate} / day`],
+                      ['Ad Format', `${SIZE_CONFIGS[sizeCategory].label} (${adWidth} × ${adHeight} px)`],
+                      ['Market Base', `₹${SIZE_CONFIGS[sizeCategory].baseDaily}/day`],
+                      ['Effective Rate', `₹${dynamicPrice.basePriceDaily}/day`],
                       ['Duration', `${days} day${days !== 1 ? 's' : ''}`],
+                      ...(dynamicPrice.durationDiscountPct > 0
+                        ? [['Duration Discount', `-${dynamicPrice.durationDiscountPct}% applied`]]
+                        : []),
+                      ['Space Rental', `₹${dynamicPrice.spaceRentalSubtotal.toLocaleString()}`],
+                      ['GST (18%)', `₹${dynamicPrice.gstAmount.toLocaleString()}`],
                     ].map(([k, v]) => (
                       <div key={k} className="flex justify-between">
                         <span className="text-muted-foreground font-['JetBrains_Mono'] text-xs">
@@ -659,18 +683,18 @@ export function CreateAdScreen({
                   </div>
                   <div className="border-t border-[#6C5FE6]/15 pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-['Outfit'] font-bold text-sm text-foreground">
-                        Total
-                      </span>
+                      <div>
+                        <span className="font-['Outfit'] font-bold text-sm text-foreground block">
+                          Total Amount
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-['JetBrains_Mono']">
+                          Inc. 18% GST & city weighting
+                        </span>
+                      </div>
                       <span className="font-['Outfit'] font-black text-2xl text-[#6C5FE6]">
-                        {days > 0 ? `₹${totalCost.toLocaleString()}` : '—'}
+                        {days > 0 ? `₹${dynamicPrice.totalAmount.toLocaleString()}` : '—'}
                       </span>
                     </div>
-                    {days > 0 && (
-                      <div className="text-[10px] text-muted-foreground font-['JetBrains_Mono'] mt-1 text-right">
-                        ₹{dailyRate}/day × {days} days
-                      </div>
-                    )}
                   </div>
                   {days === 0 && (
                     <p className="text-xs text-amber-600 font-['Inter'] flex items-center gap-1">

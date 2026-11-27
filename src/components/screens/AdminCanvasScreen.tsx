@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Filter, Layers, X, Loader2, MapPin } from 'lucide-react'
+import {
+  ArrowLeft,
+  Filter,
+  Layers,
+  X,
+  Loader2,
+  MapPin,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react'
 import type { Screen, CanvasTile } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
+import { previewAuthorizationHeaders } from '@/lib/session'
 
 const CITIES = [
   { slug: 'chennai', name: 'Chennai' },
@@ -21,24 +33,97 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
   const [filterStatus, setFilterStatus] = useState('all')
   const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    let isMounted = true
+  // Add Space Modal State
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addSize, setAddSize] = useState<'small' | 'medium' | 'large'>('medium')
+  const [addX, setAddX] = useState(100)
+  const [addY, setAddY] = useState(100)
+  const [addPrice, setAddPrice] = useState(150)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+
+  const fetchTiles = () => {
     setIsLoading(true)
     fetch(`/api/inventory/slots?city=${selectedCity}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (isMounted && data?.tiles) {
+        if (data?.tiles) {
           setTiles(data.tiles)
         }
       })
       .catch(() => {})
       .finally(() => {
-        if (isMounted) setIsLoading(false)
+        setIsLoading(false)
       })
-    return () => {
-      isMounted = false
-    }
+  }
+
+  useEffect(() => {
+    fetchTiles()
   }, [selectedCity])
+
+  const handleAddSpace = async () => {
+    setIsSubmitting(true)
+    setStatusMessage(null)
+    try {
+      const res = await fetch('/api/admin/inventory/slots', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...previewAuthorizationHeaders(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          city: selectedCity,
+          sizeCategory: addSize,
+          x: addX,
+          y: addY,
+          basePriceDaily: addPrice,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add canvas space.')
+
+      setStatusMessage({ text: 'New space added to canvas!', type: 'success' })
+      setShowAddModal(false)
+      fetchTiles()
+    } catch (err) {
+      setStatusMessage({
+        text: err instanceof Error ? err.message : 'Unable to create space.',
+        type: 'error',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleRemoveSpace = async (slotId: string | number) => {
+    if (!confirm('Are you sure you want to remove this space from the canvas?')) return
+
+    setIsSubmitting(true)
+    setStatusMessage(null)
+    try {
+      const res = await fetch(`/api/admin/inventory/slots?id=${slotId}`, {
+        method: 'DELETE',
+        headers: previewAuthorizationHeaders(),
+        credentials: 'include',
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to remove canvas space.')
+
+      setSelectedTile(null)
+      setStatusMessage({ text: 'Space removed from canvas.', type: 'success' })
+      fetchTiles()
+    } catch (err) {
+      setStatusMessage({
+        text: err instanceof Error ? err.message : 'Unable to remove space.',
+        type: 'error',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const statusColors: Record<string, string> = {
     active: '#00A882',
@@ -51,8 +136,6 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
 
   const adTiles = tiles.filter((t) => t.type === 'ad')
   const availTiles = tiles.filter((t) => t.type === 'available')
-  const reservedTiles = tiles.filter((t) => (t as any).type === 'reserved')
-
   const totalSlots = tiles.length || 0
   const occupancyRate = totalSlots > 0 ? Math.round((adTiles.length / totalSlots) * 100) : 0
   const totalRevenue = adTiles.length * 150
@@ -77,7 +160,7 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
         </button>
         <div className="w-px h-5 bg-black/10" />
         <h1 className="font-['Outfit'] font-bold text-lg text-foreground flex items-center gap-2">
-          Canvas Management — {currentCityName}
+          Canvas Space Control — {currentCityName}
         </h1>
 
         {/* City Selector */}
@@ -100,6 +183,16 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
         </div>
 
         <div className="ml-auto flex items-center gap-3">
+          <button
+            onClick={() => {
+              setAddPrice(addSize === 'small' ? 50 : addSize === 'large' ? 300 : 150)
+              setShowAddModal(true)
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#6C5FE6] hover:bg-[#5b4fd6] text-white text-xs font-['Outfit'] font-bold transition-all cursor-pointer shadow-sm shadow-[#6C5FE6]/25"
+          >
+            <Plus size={14} /> Add Space
+          </button>
+
           <div className="flex gap-1">
             {['all', 'active', 'available'].map((s) => (
               <button
@@ -118,17 +211,35 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
         </div>
       </header>
 
+      {/* Notifications */}
+      {statusMessage && (
+        <div
+          className={`mx-8 mt-4 p-3 rounded-xl border text-xs font-['Inter'] flex items-center justify-between ${
+            statusMessage.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {statusMessage.type === 'success' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+            <span>{statusMessage.text}</span>
+          </div>
+          <button onClick={() => setStatusMessage(null)} className="cursor-pointer">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       <div className="flex h-[calc(100vh-65px)]">
-        {/* Canvas mini view */}
+        {/* Canvas view */}
         <div className="flex-1 overflow-auto p-6">
-          {/* Stats bar - fully dynamic */}
-          <div className="grid grid-cols-5 gap-3 mb-6">
+          {/* Stats bar */}
+          <div className="grid grid-cols-4 gap-3 mb-6">
             {[
-              { label: 'Total Grid Inventory', value: totalSlots.toString(), color: '#6B7491' },
-              { label: 'Available Slots', value: availTiles.length.toString(), color: '#5B6890' },
-              { label: 'Occupied Ads', value: adTiles.length.toString(), color: '#00A882' },
+              { label: 'Total Spaces Managed', value: totalSlots.toString(), color: '#6B7491' },
+              { label: 'Available Inventory', value: availTiles.length.toString(), color: '#5B6890' },
+              { label: 'Active Live Ads', value: adTiles.length.toString(), color: '#00A882' },
               { label: 'Canvas Occupancy', value: `${occupancyRate}%`, color: '#6C5FE6' },
-              { label: 'Est. Revenue', value: `₹${totalRevenue.toLocaleString('en-IN')}`, color: '#00A882' },
             ].map((s) => (
               <div key={s.label} className="rounded-xl border border-black/5 bg-[#F0F2F9] p-4">
                 <div className="text-lg font-['Outfit'] font-black" style={{ color: s.color }}>
@@ -141,32 +252,10 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
             ))}
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-4 mb-4">
-            {[
-              ['active', '#00A882'],
-              ['available', '#DDE2F2'],
-              ['reserved', '#6C5FE6'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex items-center gap-1.5">
-                <div
-                  className="w-3 h-3 rounded-sm"
-                  style={{
-                    background: v,
-                    border: k === 'available' ? '1px dashed rgba(0,0,0,0.15)' : 'none',
-                  }}
-                />
-                <span className="text-xs text-muted-foreground font-['JetBrains_Mono'] capitalize">
-                  {k}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Visual canvas grid */}
+          {/* Canvas container */}
           <div
-            className="rounded-2xl border border-black/8 overflow-hidden bg-[#ECF0FA] relative"
-            style={{ height: 480 }}
+            className="relative bg-white rounded-2xl border border-black/8 overflow-hidden shadow-sm"
+            style={{ width: '100%', minHeight: '650px', height: '650px' }}
           >
             {isLoading && (
               <div className="absolute inset-0 z-10 bg-white/60 flex items-center justify-center">
@@ -183,7 +272,7 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
             />
             <div
               className="absolute inset-0"
-              style={{ transform: 'scale(0.25)', transformOrigin: '0 0' }}
+              style={{ transform: 'scale(0.35)', transformOrigin: '0 0' }}
             >
               {filteredTiles.map((tile) => (
                 <div
@@ -195,7 +284,7 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
                     width: tile.w,
                     height: tile.h,
                     background: tile.type === 'ad' ? tile.color || '#00A882' : statusColors.available,
-                    border: tile.type === 'available' ? '2px dashed rgba(0,0,0,0.1)' : 'none',
+                    border: tile.type === 'available' ? '2px dashed rgba(0,0,0,0.15)' : 'none',
                     opacity: selectedTile?.id === tile.id ? 1 : 0.85,
                     outline: selectedTile?.id === tile.id ? '3px solid #6C5FE6' : 'none',
                   }}
@@ -211,7 +300,7 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
           {selectedTile ? (
             <>
               <div className="flex items-center justify-between mb-5">
-                <div className="font-['Outfit'] font-bold text-foreground">Space Details</div>
+                <div className="font-['Outfit'] font-bold text-foreground">Space Control</div>
                 <button
                   onClick={() => setSelectedTile(null)}
                   className="w-7 h-7 rounded-lg bg-black/5 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
@@ -223,9 +312,10 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
                 {[
                   ['Space ID', `SP-${selectedTile.id.toString().padStart(4, '0')}`],
                   ['City Canvas', currentCityName],
-                  ['Status', selectedTile.type === 'ad' ? 'Active' : 'Available'],
-                  ['Position', `(${selectedTile.x}, ${selectedTile.y})`],
+                  ['Status', selectedTile.type === 'ad' ? 'Occupied / Active Ad' : 'Available for Rent'],
+                  ['Position', `X: ${selectedTile.x}px, Y: ${selectedTile.y}px`],
                   ['Dimensions', `${selectedTile.w} × ${selectedTile.h} px`],
+                  ['Standard Tier', selectedTile.w === 100 ? 'Small (100×100)' : selectedTile.w === 400 ? 'Large (400×200)' : 'Medium (200×200)'],
                   ...(selectedTile.type === 'ad'
                     ? [
                         ['Advertiser', selectedTile.brand ?? '—'],
@@ -233,7 +323,7 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
                         ['Impressions', selectedTile.views ? selectedTile.views.toString() : '0'],
                         ['Interactions', selectedTile.clicks ? selectedTile.clicks.toString() : '0'],
                       ]
-                    : [['Base Price', `₹${selectedTile.price || 50}/day`]]),
+                    : [['Base Price', `₹${selectedTile.price || 150}/day`]]),
                 ].map(([k, v]) => (
                   <div
                     key={k}
@@ -246,20 +336,22 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
                   </div>
                 ))}
               </div>
+
               <div className="space-y-2">
                 {selectedTile.type === 'ad' ? (
                   <button
                     onClick={() => onNavigate('admin-mod')}
-                    className="w-full py-2 rounded-lg bg-[#6C5FE6] text-white text-xs font-['Outfit'] font-semibold hover:bg-[#5b4fd6] transition-all cursor-pointer"
+                    className="w-full py-2.5 rounded-xl bg-[#6C5FE6] text-white text-xs font-['Outfit'] font-semibold hover:bg-[#5b4fd6] transition-all cursor-pointer"
                   >
-                    Review Campaign in Moderation
+                    Inspect in Moderation
                   </button>
                 ) : (
                   <button
-                    onClick={() => onNavigate('create-ad')}
-                    className="w-full py-2 rounded-lg bg-[#6C5FE6] text-white text-xs font-['Outfit'] font-semibold hover:bg-[#5b4fd6] transition-all cursor-pointer"
+                    onClick={() => handleRemoveSpace(selectedTile.id)}
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-['Outfit'] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    Book Space
+                    <Trash2 size={13} /> Remove Space from Canvas
                   </button>
                 )}
               </div>
@@ -268,12 +360,119 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
             <div className="flex flex-col items-center justify-center h-full text-center gap-3">
               <Layers size={32} className="text-muted-foreground/30" />
               <div className="text-sm text-muted-foreground font-['Outfit']">
-                Click any slot on the canvas to inspect its status
+                Click any slot on the canvas to inspect or remove it, or click "+ Add Space" above to place new inventory.
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Add Space Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-black/8 shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-['Outfit'] font-bold text-lg text-foreground">
+                Add Canvas Space — {currentCityName}
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center text-muted-foreground"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-['Outfit'] font-bold text-muted-foreground mb-1.5">
+                  Size Tier (Strict Standard Formats)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: 'small', label: 'Small', dims: '100 × 100', price: 50 },
+                    { key: 'medium', label: 'Medium', dims: '200 × 200', price: 150 },
+                    { key: 'large', label: 'Large', dims: '400 × 200', price: 300 },
+                  ].map((s) => (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => {
+                        setAddSize(s.key as any)
+                        setAddPrice(s.price)
+                      }}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        addSize === s.key
+                          ? 'border-[#6C5FE6] bg-[#6C5FE6]/5 shadow-sm'
+                          : 'border-black/8 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="text-xs font-['Outfit'] font-bold text-foreground">{s.label}</div>
+                      <div className="text-[10px] text-muted-foreground font-['JetBrains_Mono']">{s.dims}</div>
+                      <div className="text-[11px] text-[#6C5FE6] font-bold mt-1">₹{s.price}/day</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-['Outfit'] font-bold text-muted-foreground mb-1">
+                    X Position (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={addX}
+                    onChange={(e) => setAddX(Number(e.target.value) || 0)}
+                    className="w-full bg-[#EDF0F8] border border-black/8 rounded-xl px-3 py-2 text-xs font-['JetBrains_Mono'] text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-['Outfit'] font-bold text-muted-foreground mb-1">
+                    Y Position (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={addY}
+                    onChange={(e) => setAddY(Number(e.target.value) || 0)}
+                    className="w-full bg-[#EDF0F8] border border-black/8 rounded-xl px-3 py-2 text-xs font-['JetBrains_Mono'] text-foreground"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-['Outfit'] font-bold text-muted-foreground mb-1">
+                  Base Rental Rate (₹/day)
+                </label>
+                <input
+                  type="number"
+                  value={addPrice}
+                  onChange={(e) => setAddPrice(Number(e.target.value) || 50)}
+                  className="w-full bg-[#EDF0F8] border border-black/8 rounded-xl px-3 py-2 text-xs font-['JetBrains_Mono'] text-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-black/10 text-xs font-['Outfit'] font-semibold text-muted-foreground hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddSpace}
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 rounded-xl bg-[#6C5FE6] hover:bg-[#5b4fd6] text-white text-xs font-['Outfit'] font-bold disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-[#6C5FE6]/25"
+              >
+                {isSubmitting ? <Loader2 size={13} className="animate-spin" /> : 'Confirm Space'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

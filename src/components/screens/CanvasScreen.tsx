@@ -6,6 +6,7 @@ import { CreativeImage } from '@/components/common/CreativeImage'
 import { SelectSpacePanel, type SelectedSpaceConfig } from '@/components/screens/SelectSpacePanel'
 import { CreateAdScreen } from '@/components/screens/CreateAdScreen'
 import { CELL, CANVAS_W, CANVAS_H, FILTER_CATEGORIES, normalizeCategory } from '@/constants/canvas'
+import { isOwnerEmail } from '@/constants/auth'
 
 const INDIAN_CITIES = [
   { slug: 'mumbai', name: 'Mumbai', icon: '🌊', state: 'Maharashtra', tier: 'Tier 1' },
@@ -238,16 +239,38 @@ export function CanvasScreen({
               className="bg-[#EDF0F8] border border-black/8 rounded-lg pl-9 pr-4 py-2 text-sm font-['Outfit'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#6C5FE6]/40 w-60"
             />
           </div>
-          <GhostBtn small onClick={() => onNavigate('dashboard')}>
-            My Ads
-          </GhostBtn>
-          <PrimaryBtn small onClick={() => setShowCreate(true)}>
-            + Post Your Ad
-          </PrimaryBtn>
+          {user && (user.role === 'admin' || isOwnerEmail(user.email)) ? (
+            <>
+              <GhostBtn small onClick={() => onNavigate('admin-canvas')}>
+                Canvas Spaces
+              </GhostBtn>
+              <PrimaryBtn small onClick={() => onNavigate('admin')}>
+                Admin Dashboard
+              </PrimaryBtn>
+            </>
+          ) : (
+            <>
+              <GhostBtn small onClick={() => onNavigate(user ? 'dashboard' : 'login')}>
+                My Ads
+              </GhostBtn>
+              <PrimaryBtn
+                small
+                onClick={() => {
+                  if (!user) {
+                    onNavigate('login')
+                  } else {
+                    setShowCreate(true)
+                  }
+                }}
+              >
+                + Post Your Ad
+              </PrimaryBtn>
+            </>
+          )}
           {user ? (
             <button
-              onClick={() => onNavigate('dashboard')}
-              title={`${user.email} — Click for Dashboard`}
+              onClick={() => onNavigate(user.role === 'admin' || isOwnerEmail(user.email) ? 'admin' : 'dashboard')}
+              title={`${user.email} — Click for ${user.role === 'admin' || isOwnerEmail(user.email) ? 'Admin' : 'Advertiser'} Dashboard`}
               className="w-8 h-8 rounded-full bg-[#6C5FE6] hover:bg-[#5b4fd6] flex items-center justify-center text-white text-xs font-bold font-['Outfit'] transition-all cursor-pointer shadow-sm"
             >
               {user.firstName ? user.firstName[0].toUpperCase() : user.email[0].toUpperCase()}
@@ -371,6 +394,11 @@ export function CanvasScreen({
                     setSelectedAd(tile)
                     setSelectedSpace(null)
                   } else {
+                    const isAdmin = user && (user.role === 'admin' || isOwnerEmail(user.email))
+                    if (isAdmin) {
+                      onNavigate('admin-canvas')
+                      return
+                    }
                     setSelectedSpace(tile)
                     setSelectedAd(null)
                   }

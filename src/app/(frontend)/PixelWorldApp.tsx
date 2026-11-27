@@ -19,9 +19,19 @@ import { UserProfileScreen } from '@/components/screens/UserProfileScreen'
 import { isOwnerEmail } from '@/constants/auth'
 
 export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | null }) {
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(initialUser)
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('pixelworld_signed_out') === 'true') {
+      return null
+    }
+    return initialUser
+  })
+
   const [screen, setScreen] = useState<Screen>(() => {
     if (typeof window !== 'undefined') {
+      if (localStorage.getItem('pixelworld_signed_out') === 'true') {
+        return 'landing'
+      }
+
       const urlParams = new URLSearchParams(window.location.search)
       const urlScreen = urlParams.get('screen') as Screen
       if (urlScreen) return urlScreen
@@ -31,7 +41,9 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
         return saved
       }
     }
-    return initialUser ? 'canvas' : 'landing'
+    return initialUser
+      ? (initialUser.role === 'admin' || isOwnerEmail(initialUser.email) ? 'admin' : 'canvas')
+      : 'landing'
   })
 
   const [selectedCity, setSelectedCity] = useState<string>(() => {
@@ -69,7 +81,13 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       }
     }
 
-    // Always sync current user state with session
+    // If user explicitly signed out, do NOT auto-login on refresh
+    if (typeof window !== 'undefined' && localStorage.getItem('pixelworld_signed_out') === 'true') {
+      setCurrentUser(null)
+      return
+    }
+
+    // Sync current user state with session
     fetch('/api/app-auth/me', {
       credentials: 'include',
       cache: 'no-store',
@@ -77,27 +95,29 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((result) => {
+        if (typeof window !== 'undefined' && localStorage.getItem('pixelworld_signed_out') === 'true') {
+          setCurrentUser(null)
+          return
+        }
         if (result?.user) {
           setCurrentUser(result.user)
           // Restore saved screen or stay on current
           if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('pixelworld_active_screen') as Screen
-            if (saved && saved !== 'login' && saved !== 'signup') {
+            if (saved && saved !== 'login' && saved !== 'signup' && saved !== 'landing') {
               setScreen(saved)
             }
           }
-        } else if (!initialUser) {
+        } else {
           setCurrentUser(null)
           if (typeof window !== 'undefined') {
             localStorage.removeItem('pixelworld_active_screen')
           }
-          setScreen('landing')
         }
       })
       .catch(() => {
         if (!initialUser) {
           setCurrentUser(null)
-          setScreen('landing')
         }
       })
   }, [initialUser])
@@ -124,38 +144,61 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
     }
 
     if (!currentUser) {
-      if (nextScreen !== 'login' && nextScreen !== 'signup' && nextScreen !== 'landing') {
-        setScreen('login')
+      // Public visitors can freely view landing, country, canvas
+      if (
+        nextScreen === 'landing' ||
+        nextScreen === 'country' ||
+        nextScreen === 'canvas' ||
+        nextScreen === 'login' ||
+        nextScreen === 'signup'
+      ) {
+        setScreen(nextScreen)
         return
       }
-      setScreen(nextScreen)
+      setScreen('login')
       return
     }
 
     const isAdmin = currentUser.role === 'admin' || isOwnerEmail(currentUser.email)
 
-    if (
-      (nextScreen === 'admin' ||
+    // Admin role separation: Admins cannot make payments or book spaces; they manage inventory & view revenue
+    if (isAdmin) {
+      if (nextScreen === 'create-ad' || nextScreen === 'checkout') {
+        setScreen('admin-canvas')
+        return
+      }
+    } else {
+      if (
+        nextScreen === 'admin' ||
         nextScreen === 'admin-mod' ||
-        nextScreen === 'admin-canvas') &&
-      !isAdmin
-    ) {
-      setScreen('dashboard')
-      return
+        nextScreen === 'admin-canvas'
+      ) {
+        setScreen('dashboard')
+        return
+      }
     }
 
     setScreen(nextScreen)
   }
 
   const logout = async () => {
-    await fetch('/api/app-auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-      headers: previewAuthorizationHeaders(),
-    })
+    try {
+      await fetch('/api/app-auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: previewAuthorizationHeaders(),
+      })
+    } catch {
+      // Ignore network errors on logout
+    }
     clearPreviewSession()
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pixelworld_signed_out', 'true')
+      localStorage.removeItem('pixelworld_active_screen')
+      sessionStorage.clear()
+    }
     setCurrentUser(null)
-    setScreen('login')
+    setScreen('landing')
   }
 
   const handleCampaignSaved = (campaign: StoredCampaign) => {
@@ -215,8 +258,12 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
         <LoginScreen
           onNavigate={nav}
           onAuthenticated={(user) => {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('pixelworld_signed_out')
+            }
             setCurrentUser(user)
-            nav('canvas')
+            const isAdmin = user.role === 'admin' || isOwnerEmail(user.email)
+            nav(isAdmin ? 'admin' : 'canvas')
           }}
         />
       )}
@@ -224,8 +271,12 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
         <SignupScreen
           onNavigate={nav}
           onAuthenticated={(user) => {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('pixelworld_signed_out')
+            }
             setCurrentUser(user)
-            nav('canvas')
+            const isAdmin = user.role === 'admin' || isOwnerEmail(user.email)
+            nav(isAdmin ? 'admin' : 'canvas')
           }}
         />
       )}

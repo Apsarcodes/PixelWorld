@@ -1,4 +1,5 @@
 import type { Access, PayloadRequest, Where } from 'payload'
+import { isOwnerEmail } from '@/constants/auth'
 
 const relationshipID = (value: unknown): string | number | null => {
   if (typeof value === 'string' || typeof value === 'number') return value
@@ -9,8 +10,12 @@ const relationshipID = (value: unknown): string | number | null => {
   return null
 }
 
-export const isPayloadAdmin = (req: PayloadRequest) => req.user?.collection === 'admins'
-export const isPayloadAdminAccess: Access = ({ req }) => req.user?.collection === 'admins'
+export const isPayloadAdmin = (req: PayloadRequest) =>
+  req.user?.collection === 'admins' ||
+  (req.user?.collection === 'users' &&
+    ((req.user as any).role === 'admin' || isOwnerEmail(req.user.email)))
+
+export const isPayloadAdminAccess: Access = ({ req }) => isPayloadAdmin(req)
 
 export const appUserDefaultOrganization = (req: PayloadRequest) => {
   if (req.user?.collection !== 'users') return null

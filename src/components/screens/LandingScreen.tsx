@@ -45,24 +45,34 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-[rgba(245,247,252,0.85)] backdrop-blur-xl border-b border-black/5">
         <PwLogo />
         <nav className="hidden md:flex items-center gap-7">
-          {['Explore', 'How It Works', 'For Advertisers', 'Pricing'].map((n) => (
-            <button
-              key={n}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-['Outfit'] font-medium"
-            >
-              {n}
-            </button>
-          ))}
+          <button
+            onClick={() => onNavigate('canvas')}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors font-['Outfit'] font-medium"
+          >
+            Live Canvas
+          </button>
+          <button
+            onClick={() => onNavigate('country')}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors font-['Outfit'] font-medium"
+          >
+            Indian Metros
+          </button>
+          <button
+            onClick={() => {
+              const el = document.getElementById('pricing-section')
+              if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors font-['Outfit'] font-medium"
+          >
+            Pricing
+          </button>
         </nav>
         <div className="flex items-center gap-3">
-          <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
-            <Search size={18} />
-          </button>
           <GhostBtn small onClick={() => onNavigate('login')}>
-            Login
+            Sign In
           </GhostBtn>
-          <PrimaryBtn small onClick={() => onNavigate('create-ad')}>
-            Post Your Ad
+          <PrimaryBtn small onClick={() => onNavigate('signup')}>
+            Sign Up
           </PrimaryBtn>
         </div>
       </header>

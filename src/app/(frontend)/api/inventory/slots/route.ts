@@ -5,20 +5,32 @@ import type { CanvasTile } from '@/types/pixelworld'
 function generateAvailableGrid(city: string): CanvasTile[] {
   const slots: CanvasTile[] = []
   let id = 1
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 10; c++) {
+  // Structured standard layout of Small (100x100), Medium (200x200), and Large (400x200) formats
+  const configs: Array<{ w: number; h: number; size: 'small' | 'medium' | 'large'; price: number }> = [
+    { w: 200, h: 200, size: 'medium', price: 150 },
+    { w: 400, h: 200, size: 'large', price: 300 },
+    { w: 100, h: 100, size: 'small', price: 50 },
+    { w: 200, h: 200, size: 'medium', price: 150 },
+  ]
+
+  for (let r = 0; r < 6; r++) {
+    let currentX = 80
+    const rowY = r * 260 + 80
+    for (let c = 0; c < 5; c++) {
+      const cfg = configs[(r + c) % configs.length]
       slots.push({
         id: id++,
-        x: c * 260 + 80,
-        y: r * 220 + 80,
-        w: 180,
-        h: 160,
+        x: currentX,
+        y: rowY,
+        w: cfg.w,
+        h: cfg.h,
         type: 'available',
-        price: 299,
-        size: 'medium',
+        price: cfg.price,
+        size: cfg.size,
         location: `${city}, India`,
         category: 'General',
       })
+      currentX += cfg.w + 40
     }
   }
   return slots

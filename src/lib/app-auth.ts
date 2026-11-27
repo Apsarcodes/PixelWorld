@@ -112,15 +112,19 @@ export function createAppAuth() {
     async logout() {
       const store = await cookies()
       const embeddedPreview = isEmbeddedPreviewRuntime()
-      store.set(APP_SESSION_COOKIE, '', {
+      const clearOptions = {
         httpOnly: true,
-        sameSite: embeddedPreview ? 'none' : 'lax',
+        sameSite: embeddedPreview ? ('none' as const) : ('lax' as const),
         secure: embeddedPreview || process.env.NODE_ENV === 'production',
         partitioned: embeddedPreview,
-        priority: 'high',
+        priority: 'high' as const,
         path: '/',
         maxAge: 0,
-      })
+      }
+      store.set(APP_SESSION_COOKIE, '', clearOptions)
+      store.set('payload-token', '', clearOptions)
+      store.delete(APP_SESSION_COOKIE)
+      store.delete('payload-token')
     },
 
     async currentUser(request?: Request): Promise<AppUser | null> {

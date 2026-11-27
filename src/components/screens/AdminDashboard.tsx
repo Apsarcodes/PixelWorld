@@ -32,6 +32,7 @@ import {
   Users,
   Loader2,
   ExternalLink,
+  X,
 } from 'lucide-react'
 import type { Screen } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
@@ -105,6 +106,45 @@ export function AdminDashboard({ onNavigate }: { onNavigate: (s: Screen) => void
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+
+  // Refund Management
+  const [selectedPaymentForRefund, setSelectedPaymentForRefund] = useState<AdminPayment | null>(null)
+  const [refundReason, setRefundReason] = useState('')
+  const [isRefunding, setIsRefunding] = useState(false)
+  const [refundMessage, setRefundMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const handleProcessRefund = async () => {
+    if (!selectedPaymentForRefund) return
+    setIsRefunding(true)
+    setRefundMessage(null)
+    try {
+      const res = await fetch('/api/admin/payments/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...previewAuthorizationHeaders(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          paymentId: selectedPaymentForRefund.id,
+          reason: refundReason.trim() || 'Refund processed by Admin upon user request',
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to process refund')
+      setRefundMessage({ type: 'success', text: data.message || 'Refund successfully processed!' })
+      fetchStats()
+      setTimeout(() => {
+        setSelectedPaymentForRefund(null)
+        setRefundReason('')
+        setRefundMessage(null)
+      }, 1500)
+    } catch (err: any) {
+      setRefundMessage({ type: 'error', text: err.message || 'Error processing refund' })
+    } finally {
+      setIsRefunding(false)
+    }
+  }
 
   const fetchStats = () => {
     setLoading(true)
@@ -700,24 +740,76 @@ export function AdminDashboard({ onNavigate }: { onNavigate: (s: Screen) => void
                 </div>
               )}
 
-              {/* VIEW: PAYMENTS */}
+              {/* VIEW: PAYMENTS & REVENUE */}
               {activePage === 'payments' && (
                 <div className="space-y-6">
+                  {/* Revenue Summary Cards */}
+                  {(() => {
+                    const grossRevenue = payments
+                      .filter((p) => p.status === 'completed' || p.status === 'success')
+                      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+                    const totalRefunds = payments
+                      .filter((p) => p.status === 'refunded')
+                      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+                    const netRevenue = grossRevenue - totalRefunds
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="rounded-2xl border border-black/5 bg-[#FAFBFF] p-5">
+                          <div className="text-xs font-['JetBrains_Mono'] uppercase tracking-wider text-muted-foreground mb-1">
+                            Total Gross Revenue
+                          </div>
+                          <div className="text-2xl font-black font-['Outfit'] text-foreground">
+                            ₹{grossRevenue.toLocaleString('en-IN')}
+                          </div>
+                          <div className="text-xs text-[#00A882] font-['Outfit'] font-semibold mt-1">
+                            Collected via UPI Gateway
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-black/5 bg-[#FAFBFF] p-5">
+                          <div className="text-xs font-['JetBrains_Mono'] uppercase tracking-wider text-muted-foreground mb-1">
+                            Total Refunds Processed
+                          </div>
+                          <div className="text-2xl font-black font-['Outfit'] text-red-500">
+                            ₹{totalRefunds.toLocaleString('en-IN')}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-['Outfit'] mt-1">
+                            Returned upon user dispute/report
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-[#6C5FE6]/20 bg-[#6C5FE6]/5 p-5">
+                          <div className="text-xs font-['JetBrains_Mono'] uppercase tracking-wider text-[#6C5FE6] font-bold mb-1">
+                            Net Platform Revenue
+                          </div>
+                          <div className="text-2xl font-black font-['Outfit'] text-[#6C5FE6]">
+                            ₹{netRevenue.toLocaleString('en-IN')}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-['Outfit'] mt-1">
+                            Realized creator / platform income
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   <div className="rounded-2xl border border-black/5 bg-[#FAFBFF] overflow-hidden">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-black/5 bg-black/2 text-xs font-['JetBrains_Mono'] text-muted-foreground uppercase">
                           <th className="py-3.5 px-6">Tax Invoice #</th>
                           <th className="py-3.5 px-6">Gateway / UPI Ref</th>
-                          <th className="py-3.5 px-6">Amount (Incl. 18% GST)</th>
+                          <th className="py-3.5 px-6">Amount</th>
                           <th className="py-3.5 px-6">Status</th>
-                          <th className="py-3.5 px-6 text-right">Settlement Date</th>
+                          <th className="py-3.5 px-6">Settlement Date</th>
+                          <th className="py-3.5 px-6 text-right">Refund Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-black/5 text-sm font-['Outfit']">
                         {payments.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                            <td colSpan={6} className="py-12 text-center text-muted-foreground">
                               No payment transactions recorded yet.
                             </td>
                           </tr>
@@ -737,13 +829,35 @@ export function AdminDashboard({ onNavigate }: { onNavigate: (s: Screen) => void
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold font-['Outfit'] ${
                                   p.status === 'completed' || p.status === 'success'
                                     ? 'bg-[#00A882]/15 text-[#00A882]'
+                                    : p.status === 'refunded'
+                                    ? 'bg-amber-100 text-amber-800'
                                     : 'bg-[#E03E4D]/15 text-[#E03E4D]'
                                 }`}>
                                   {p.status}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 text-right text-xs text-muted-foreground font-['JetBrains_Mono']">
+                              <td className="py-4 px-6 text-xs text-muted-foreground font-['JetBrains_Mono']">
                                 {p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : 'Recent'}
+                              </td>
+                              <td className="py-4 px-6 text-right">
+                                {p.status === 'completed' || p.status === 'success' ? (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedPaymentForRefund(p)
+                                      setRefundReason('')
+                                      setRefundMessage(null)
+                                    }}
+                                    className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-semibold font-['Outfit'] transition-colors cursor-pointer"
+                                  >
+                                    Process Refund
+                                  </button>
+                                ) : p.status === 'refunded' ? (
+                                  <span className="text-xs text-muted-foreground font-['JetBrains_Mono']">
+                                    Refunded
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
                               </td>
                             </tr>
                           ))
@@ -751,6 +865,84 @@ export function AdminDashboard({ onNavigate }: { onNavigate: (s: Screen) => void
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Refund Modal */}
+                  {selectedPaymentForRefund && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                      <div className="bg-card w-full max-w-md rounded-2xl border border-black/10 shadow-2xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-['Outfit'] font-bold text-lg text-foreground">
+                            Process Payment Refund
+                          </h3>
+                          <button
+                            onClick={() => setSelectedPaymentForRefund(null)}
+                            className="p-1 text-muted-foreground hover:text-foreground rounded-lg"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                            Refunding will set payment status to <strong>refunded</strong>, unpublish any associated active campaign back to draft, release its slot, and notify the advertiser.
+                          </div>
+
+                          <div className="space-y-2 text-xs font-['Outfit']">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Invoice #:</span>
+                              <span className="font-bold text-foreground">{selectedPaymentForRefund.invoiceNumber}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Gateway Ref:</span>
+                              <span className="font-mono text-foreground">{selectedPaymentForRefund.upiId}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Refund Amount:</span>
+                              <span className="font-bold text-lg text-red-600">₹{selectedPaymentForRefund.amount.toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-foreground mb-1 font-['Outfit']">
+                              Reason for Refund
+                            </label>
+                            <textarea
+                              value={refundReason}
+                              onChange={(e) => setRefundReason(e.target.value)}
+                              placeholder="e.g. User reported creative alignment issue, customer request, etc."
+                              rows={3}
+                              className="w-full text-xs p-3 rounded-xl border border-black/10 focus:border-[#6C5FE6] focus:outline-none bg-background resize-none"
+                            />
+                          </div>
+
+                          {refundMessage && (
+                            <div className={`p-3 rounded-xl text-xs font-['Outfit'] font-semibold ${
+                              refundMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                            }`}>
+                              {refundMessage.text}
+                            </div>
+                          )}
+
+                          <div className="flex justify-end gap-3 pt-2">
+                            <button
+                              onClick={() => setSelectedPaymentForRefund(null)}
+                              disabled={isRefunding}
+                              className="px-4 py-2 rounded-xl text-xs font-semibold border border-black/10 hover:bg-black/5"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleProcessRefund}
+                              disabled={isRefunding}
+                              className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              {isRefunding ? 'Processing...' : 'Confirm & Process Refund'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

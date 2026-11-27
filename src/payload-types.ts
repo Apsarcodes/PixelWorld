@@ -395,6 +395,7 @@ export interface Campaign {
 export interface Media {
   id: number;
   alt: string;
+  externalURL?: string | null;
   purpose: 'creative' | 'organization-logo' | 'other';
   uploadedBy: number | User;
   organization: number | Organization;
@@ -1355,6 +1356,7 @@ export interface NotificationsSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  externalURL?: T;
   purpose?: T;
   uploadedBy?: T;
   organization?: T;
