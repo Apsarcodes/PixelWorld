@@ -1,5 +1,10 @@
 import { cookies } from 'next/headers'
-import { exchangeGoogleCodeForProfile, upsertGoogleAccount, getSiteUrl } from '@/lib/google-auth'
+import {
+  exchangeGoogleCodeForProfile,
+  upsertGoogleAccount,
+  getGoogleRedirectUri,
+  getSiteUrl,
+} from '@/lib/google-auth'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -7,42 +12,53 @@ export async function GET(request: Request) {
   const state = url.searchParams.get('state')
   const oauthError = url.searchParams.get('error')
 
-  const siteUrl = getSiteUrl()
+  const cookieStore = await cookies()
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host')
+  const proto = request.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https')
+  const requestOrigin = host ? `${proto}://${host}` : undefined
+  const cookieOrigin = cookieStore.get('oauth_origin')?.value
+  const origin = cookieOrigin || requestOrigin || getSiteUrl()
 
   if (oauthError) {
     console.error('Google OAuth error returned from provider:', oauthError)
-    return Response.redirect(`${siteUrl}/?auth_error=${encodeURIComponent(oauthError)}`, 302)
+    return Response.redirect(`${origin}/?auth_error=${encodeURIComponent(oauthError)}`, 302)
   }
 
   if (!code || !state) {
-    return Response.redirect(`${siteUrl}/?auth_error=missing_code_or_state`, 302)
+    return Response.redirect(`${origin}/?auth_error=missing_code_or_state`, 302)
   }
 
-  const cookieStore = await cookies()
   const expectedState = cookieStore.get('oauth_state')?.value
 
   if (!expectedState || expectedState !== state) {
-    return Response.redirect(`${siteUrl}/?auth_error=invalid_state_csrf`, 302)
+    console.error('OAuth state CSRF validation failed:', { expectedState, receivedState: state })
+    return Response.redirect(`${origin}/?auth_error=invalid_state_csrf`, 302)
   }
 
-  // Clear the state cookie
+  // Clear state and origin cookies
   cookieStore.set('oauth_state', '', {
+    httpOnly: true,
+    path: '/',
+    maxAge: 0,
+  })
+  cookieStore.set('oauth_origin', '', {
     httpOnly: true,
     path: '/',
     maxAge: 0,
   })
 
   try {
-    const profile = await exchangeGoogleCodeForProfile(code)
+    const redirectUri = getGoogleRedirectUri(origin)
+    const profile = await exchangeGoogleCodeForProfile(code, redirectUri)
     await upsertGoogleAccount(profile)
 
     // Redirect to home root where PixelWorldApp auto-detects user session
-    return Response.redirect(`${siteUrl}/`, 302)
+    return Response.redirect(`${origin}/`, 302)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Google authentication failed'
     console.error('Google OAuth callback error:', err)
     return Response.redirect(
-      `${siteUrl}/?auth_error=${encodeURIComponent(message)}`,
+      `${origin}/?auth_error=${encodeURIComponent(message)}`,
       302,
     )
   }

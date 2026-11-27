@@ -25,23 +25,23 @@ export function isGoogleOAuthConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
 }
 
-export function getGoogleRedirectUri(): string {
-  const siteUrl = getSiteUrl()
-  return `${siteUrl}/api/app-auth/google/callback`
+export function getGoogleRedirectUri(origin?: string): string {
+  const siteUrl = origin || getSiteUrl()
+  return `${siteUrl.replace(/\/+$/, '')}/api/app-auth/google/callback`
 }
 
 export function generateOAuthState(): string {
   return crypto.randomBytes(32).toString('hex')
 }
 
-export function getGoogleAuthorizationUrl(state: string): string {
-  const siteUrl = getSiteUrl()
+export function getGoogleAuthorizationUrl(state: string, origin?: string): string {
+  const siteUrl = origin || getSiteUrl()
   if (!isGoogleOAuthConfigured()) {
     return `${siteUrl}/?auth_error=google_oauth_credentials_missing`
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!
-  const redirectUri = getGoogleRedirectUri()
+  const redirectUri = getGoogleRedirectUri(origin)
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -57,10 +57,11 @@ export function getGoogleAuthorizationUrl(state: string): string {
 
 export async function exchangeGoogleCodeForProfile(
   code: string,
+  redirectUriParam?: string,
 ): Promise<GoogleUserProfile> {
   const clientId = process.env.GOOGLE_CLIENT_ID!
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET!
-  const redirectUri = getGoogleRedirectUri()
+  const redirectUri = redirectUriParam || getGoogleRedirectUri()
 
   // 1. Exchange code for access token
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
