@@ -175,7 +175,14 @@ export function CreateAdScreen({
         campaign={savedCampaign as StoredCampaign}
       />
     )
-  if (step === 3) return <CheckoutScreen onNavigate={onNavigate} campaign={savedCampaign} />
+  if (step === 3)
+    return (
+      <CheckoutScreen
+        onNavigate={onNavigate}
+        onBack={() => setStep(2)}
+        campaign={savedCampaign}
+      />
+    )
 
   return (
     <div className="min-h-screen bg-background">

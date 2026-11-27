@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -22,9 +23,11 @@ import { calculateDynamicPrice } from '@/lib/pricing'
 
 export function CheckoutScreen({
   onNavigate,
+  onBack,
   campaign,
 }: {
   onNavigate: (s: Screen) => void
+  onBack?: () => void
   campaign: StoredCampaign | null
 }) {
   const [method, setMethod] = useState<'upi' | 'card' | 'netbanking'>('upi')
@@ -237,9 +240,25 @@ export function CheckoutScreen({
   return (
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between px-8 py-4 border-b border-black/6 sticky top-0 z-50 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl">
-        <PwLogo size="sm" />
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => (onBack ? onBack() : onNavigate('create-ad'))}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] cursor-pointer transition-colors"
+          >
+            <ArrowLeft size={16} /> Back to Ad Setup
+          </button>
+          <div className="w-px h-5 bg-black/10" />
+          <PwLogo size="sm" />
+        </div>
         <h2 className="font-['Outfit'] font-bold text-lg text-foreground">Secure Checkout</h2>
-        <div className="w-24" />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onNavigate('canvas')}
+            className="text-xs text-muted-foreground hover:text-foreground font-['Outfit']"
+          >
+            Canvas
+          </button>
+        </div>
       </header>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 flex flex-col lg:grid lg:grid-cols-5 gap-8">
@@ -420,6 +439,14 @@ export function CheckoutScreen({
                 </>
               )}
             </PrimaryBtn>
+
+            <button
+              type="button"
+              onClick={() => (onBack ? onBack() : onNavigate('create-ad'))}
+              className="w-full py-2.5 rounded-xl border border-black/10 hover:bg-black/5 text-muted-foreground hover:text-foreground text-xs font-['Outfit'] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={13} /> Back to Ad Customization
+            </button>
 
             <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/8 border border-amber-500/15">
               <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />

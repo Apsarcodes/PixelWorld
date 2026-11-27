@@ -158,6 +158,12 @@ export function AdminCanvasScreen({ onNavigate }: { onNavigate: (s: Screen) => v
         >
           <ArrowLeft size={16} /> Admin Portal
         </button>
+        <button
+          onClick={() => onNavigate('canvas')}
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-xs font-['Outfit'] cursor-pointer bg-black/5 hover:bg-black/10 px-2.5 py-1 rounded-lg"
+        >
+          <Layers size={13} /> View Live Canvas
+        </button>
         <div className="w-px h-5 bg-black/10" />
         <h1 className="font-['Outfit'] font-bold text-lg text-foreground flex items-center gap-2">
           Canvas Space Control — {currentCityName}

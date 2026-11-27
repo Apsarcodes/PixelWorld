@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {
   Activity,
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Bell,
@@ -346,23 +347,32 @@ export function AdminDashboard({ onNavigate }: { onNavigate: (s: Screen) => void
       {/* Main content */}
       <main className="flex-1 ml-60 min-h-screen">
         <header className="sticky top-0 z-30 flex items-center justify-between px-8 py-4 border-b border-black/5 bg-[rgba(244,246,251,0.95)] backdrop-blur-xl">
-          <div>
-            <h1 className="font-['Outfit'] font-black text-2xl text-foreground capitalize">
-              {activePage === 'overview' && 'Admin Control Panel'}
-              {activePage === 'users' && 'User Accounts Management'}
-              {activePage === 'advertisers' && 'Registered Advertisers'}
-              {activePage === 'campaigns' && 'Campaigns & Ad Inventory'}
-              {activePage === 'ads' && 'Ad Creatives & Media Assets'}
-              {activePage === 'locations' && 'Metro Locations & Canvases'}
-              {activePage === 'payments' && 'Payments & Settlement Log'}
-              {activePage === 'pricing' && 'Pricing Tiers Configuration'}
-              {activePage === 'analytics' && 'Platform Analytics'}
-              {activePage === 'audit' && 'System Audit Logs'}
-              {activePage === 'settings' && 'System Settings & Infrastructure'}
-            </h1>
-            <p className="text-sm text-muted-foreground font-['Inter']">
-              Live operational metrics connected directly to Supabase PostgreSQL & Cloudflare R2.
-            </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => onNavigate('canvas')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/8 hover:bg-black/5 text-muted-foreground hover:text-foreground text-xs font-['Outfit'] font-semibold transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={14} /> Back to Canvas
+            </button>
+            <div className="w-px h-6 bg-black/10" />
+            <div>
+              <h1 className="font-['Outfit'] font-black text-2xl text-foreground capitalize">
+                {activePage === 'overview' && 'Admin Control Panel'}
+                {activePage === 'users' && 'User Accounts Management'}
+                {activePage === 'advertisers' && 'Registered Advertisers'}
+                {activePage === 'campaigns' && 'Campaigns & Ad Inventory'}
+                {activePage === 'ads' && 'Ad Creatives & Media Assets'}
+                {activePage === 'locations' && 'Metro Locations & Canvases'}
+                {activePage === 'payments' && 'Payments & Settlement Log'}
+                {activePage === 'pricing' && 'Pricing Tiers Configuration'}
+                {activePage === 'analytics' && 'Platform Analytics'}
+                {activePage === 'audit' && 'System Audit Logs'}
+                {activePage === 'settings' && 'System Settings & Infrastructure'}
+              </h1>
+              <p className="text-sm text-muted-foreground font-['Inter']">
+                Live operational metrics connected directly to Supabase PostgreSQL & Cloudflare R2.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <button

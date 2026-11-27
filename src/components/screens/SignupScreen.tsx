@@ -169,6 +169,13 @@ export function SignupScreen({
         {leftPanel}
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 overflow-y-auto">
           <div className="w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => onNavigate('landing')}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] font-semibold mb-6 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={16} /> Back to Home
+            </button>
             <div className="lg:hidden mb-6">
               <PwLogo size="sm" />
             </div>
@@ -304,6 +311,13 @@ export function SignupScreen({
         {leftPanel}
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 overflow-y-auto">
           <div className="w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] font-semibold mb-6 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={16} /> Back to Step 1
+            </button>
             <div className="lg:hidden mb-6">
               <PwLogo size="sm" />
             </div>
@@ -441,6 +455,13 @@ export function SignupScreen({
         {leftPanel}
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 overflow-y-auto">
           <div className="w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => onNavigate('landing')}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] font-semibold mb-6 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={16} /> Back to Home
+            </button>
             <div className="lg:hidden mb-6">
               <PwLogo size="sm" />
             </div>

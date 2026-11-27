@@ -60,13 +60,30 @@ export function CountryScreen({
   return (
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between px-8 py-4 border-b border-black/6 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl sticky top-0 z-50">
-        <PwLogo />
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onNavigate('landing')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] cursor-pointer"
+          >
+            <ArrowLeft size={16} /> Back to Home
+          </button>
+          <div className="w-px h-5 bg-black/10" />
+          <PwLogo />
+        </div>
         <nav className="hidden md:flex items-center gap-2 text-sm text-muted-foreground font-['Outfit']">
-          <button className="hover:text-foreground transition-colors">World</button>
+          <button
+            onClick={() => onNavigate('landing')}
+            className="hover:text-foreground transition-colors cursor-pointer"
+          >
+            World
+          </button>
           <ChevronRight size={14} />
           <span className="text-foreground font-semibold">India</span>
         </nav>
         <div className="flex items-center gap-3">
+          <GhostBtn small onClick={() => onNavigate('canvas')}>
+            Explore Canvas
+          </GhostBtn>
           <PrimaryBtn small onClick={() => onNavigate('canvas')}>
             Post Your Ad
           </PrimaryBtn>

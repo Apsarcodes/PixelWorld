@@ -55,6 +55,28 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
   const [campaigns, setCampaigns] = useState<StoredCampaign[]>([])
   const [activeCampaign, setActiveCampaign] = useState<StoredCampaign | null>(null)
 
+  const [history, setHistory] = useState<Screen[]>([])
+
+  const goBack = () => {
+    if (history.length > 0) {
+      const prev = history[history.length - 1]
+      setHistory((h) => h.slice(0, -1))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pixelworld_active_screen', prev)
+      }
+      setScreen(prev)
+    } else {
+      // Sensible fallback based on current screen
+      if (screen === 'checkout') setScreen(activeCampaign ? 'create-ad' : 'canvas')
+      else if (screen === 'create-ad') setScreen('canvas')
+      else if (screen === 'admin-mod' || screen === 'admin-canvas') setScreen('admin')
+      else if (screen === 'admin') setScreen('canvas')
+      else if (screen === 'dashboard') setScreen('canvas')
+      else if (screen === 'country' || screen === 'login' || screen === 'signup' || screen === 'profile') setScreen('landing')
+      else setScreen('landing')
+    }
+  }
+
   const handleSelectCity = (city: string) => {
     const normalized = (city || 'mumbai').toLowerCase().trim()
     setSelectedCity(normalized)
@@ -62,6 +84,19 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       localStorage.setItem('pixelworld_selected_city', normalized)
     }
   }
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const targetScreen = e.state?.screen || (new URLSearchParams(window.location.search).get('screen') as Screen)
+      if (targetScreen) {
+        setScreen(targetScreen)
+      } else {
+        setScreen('landing')
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   useEffect(() => {
     document.documentElement.classList.remove('dark')
@@ -139,8 +174,16 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
   }, [currentUser])
 
   const nav = (nextScreen: Screen) => {
+    if (nextScreen !== screen) {
+      setHistory((prev) => [...prev, screen])
+    }
     if (typeof window !== 'undefined') {
       localStorage.setItem('pixelworld_active_screen', nextScreen)
+      try {
+        window.history.pushState({ screen: nextScreen }, '', `?screen=${nextScreen}`)
+      } catch {
+        // Fallback
+      }
     }
 
     if (!currentUser) {
@@ -235,13 +278,19 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       )}
       {screen === 'create-ad' && (
         <CreateAdScreen
-          onBack={() => nav('canvas')}
+          onBack={goBack}
           onNavigate={nav}
           onCampaignSaved={handleCampaignSaved}
           initialCampaign={activeCampaign}
         />
       )}
-      {screen === 'checkout' && <CheckoutScreen onNavigate={nav} campaign={activeCampaign} />}
+      {screen === 'checkout' && (
+        <CheckoutScreen
+          onNavigate={nav}
+          onBack={goBack}
+          campaign={activeCampaign}
+        />
+      )}
       {screen === 'dashboard' && (
         <DashboardScreen
           onNavigate={nav}

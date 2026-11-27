@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { isOwnerEmail } from '@/constants/auth'
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   BarChart2,
   Bell,
@@ -174,21 +175,30 @@ export function DashboardScreen({
       {/* Main Content Area */}
       <main className="flex-1 ml-60 min-h-screen">
         <header className="sticky top-0 z-30 flex items-center justify-between px-8 py-4 border-b border-black/6 bg-[rgba(244,246,251,0.95)] backdrop-blur-xl">
-          <div>
-            <h1 className="font-['Outfit'] font-black text-2xl text-foreground capitalize">
-              {activePage === 'overview' && 'Dashboard Overview'}
-              {activePage === 'campaigns' && 'My Ad Campaigns'}
-              {activePage === 'spaces' && 'My Booked Ad Spaces'}
-              {activePage === 'creatives' && 'Creative Assets Gallery'}
-              {activePage === 'analytics' && 'Campaign Analytics'}
-              {activePage === 'payments' && 'Tax Invoices & Billing'}
-              {activePage === 'notifications' && 'Notifications'}
-              {activePage === 'profile' && 'Business Profile Settings'}
-              {activePage === 'settings' && 'Account Settings'}
-            </h1>
-            <p className="text-xs text-muted-foreground font-['Inter'] mt-0.5">
-              {user ? `Logged in as ${user.email}` : 'Advertiser Portal'}
-            </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => onNavigate('canvas')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/8 hover:bg-black/5 text-muted-foreground hover:text-foreground text-xs font-['Outfit'] font-semibold transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={14} /> Back to Canvas
+            </button>
+            <div className="w-px h-6 bg-black/10" />
+            <div>
+              <h1 className="font-['Outfit'] font-black text-2xl text-foreground capitalize">
+                {activePage === 'overview' && 'Dashboard Overview'}
+                {activePage === 'campaigns' && 'My Ad Campaigns'}
+                {activePage === 'spaces' && 'My Booked Ad Spaces'}
+                {activePage === 'creatives' && 'Creative Assets Gallery'}
+                {activePage === 'analytics' && 'Campaign Analytics'}
+                {activePage === 'payments' && 'Tax Invoices & Billing'}
+                {activePage === 'notifications' && 'Notifications'}
+                {activePage === 'profile' && 'Business Profile Settings'}
+                {activePage === 'settings' && 'Account Settings'}
+              </h1>
+              <p className="text-xs text-muted-foreground font-['Inter'] mt-0.5">
+                {user ? `Logged in as ${user.email}` : 'Advertiser Portal'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {(user?.role === 'admin' || isOwnerEmail(user?.email)) && (

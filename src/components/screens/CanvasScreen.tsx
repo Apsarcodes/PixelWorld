@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react'
-import { ChevronDown, ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minus, Navigation, Phone, Play, Plus, RotateCcw, Search, Share2, ShoppingBag, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, ExternalLink, Map, MapPin, Maximize2, MessageCircle, Minus, Navigation, Phone, Play, Plus, RotateCcw, Search, Share2, ShoppingBag, X } from 'lucide-react'
 import type { Screen, CanvasTile, StoredCampaign, AppUser } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge } from '@/components/common/UIComponents'
 import { CreativeImage } from '@/components/common/CreativeImage'
@@ -168,6 +168,13 @@ export function CanvasScreen({
 
       {/* Top bar */}
       <header className="flex items-center gap-4 px-6 py-3 border-b border-black/6 bg-[rgba(245,247,252,0.98)] backdrop-blur-xl z-40 shrink-0 shadow-sm">
+        <button
+          onClick={() => onNavigate('landing')}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-black/8 hover:bg-black/5 text-muted-foreground hover:text-foreground text-xs font-['Outfit'] font-semibold transition-colors cursor-pointer"
+          title="Back to Landing Page"
+        >
+          <ArrowLeft size={13} /> Home
+        </button>
         <PwLogo size="sm" />
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-['Outfit']">
           <button onClick={() => onNavigate('landing')} className="hover:text-foreground">
