@@ -12,18 +12,22 @@ import {
 } from '@/access/organization-access'
 
 // In serverless environments (Vercel, AWS Lambda), write uploads to OS temp directory
-const uploadDir =
-  process.env.VERCEL || process.env.NODE_ENV === 'production'
-    ? path.resolve(os.tmpdir(), 'media')
-    : path.resolve(process.cwd(), 'media')
-
-try {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true })
+export const getUploadDir = () => {
+  const dir =
+    process.env.VERCEL || process.env.NODE_ENV === 'production'
+      ? path.resolve(os.tmpdir(), 'media')
+      : path.resolve(process.cwd(), 'media')
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+  } catch {
+    // Gracefully continue in environments where directory already exists
   }
-} catch {
-  // Gracefully continue in environments where directory already exists
+  return dir
 }
+
+const uploadDir = getUploadDir()
 
 const assignMediaOwnership: CollectionBeforeValidateHook = ({ data, operation, req }) => {
   if (isPayloadAdmin(req)) return data
@@ -37,7 +41,7 @@ const assignMediaOwnership: CollectionBeforeValidateHook = ({ data, operation, r
       ...data,
       organization,
       uploadedBy: req.user.id,
-      purpose: 'creative',
+      purpose: data?.purpose || 'creative',
     }
   }
   return { ...data, organization: undefined, uploadedBy: undefined, purpose: undefined }
@@ -63,7 +67,17 @@ export const Media: CollectionConfig = {
     update: organizationScopedAccess,
   },
   hooks: {
-    beforeValidate: [assignMediaOwnership],
+    beforeOperation: [
+      () => {
+        getUploadDir()
+      },
+    ],
+    beforeValidate: [
+      () => {
+        getUploadDir()
+      },
+      assignMediaOwnership,
+    ],
     afterRead: [
       ({ doc }) => {
         if (doc && (doc as any).externalURL) {
@@ -92,8 +106,8 @@ export const Media: CollectionConfig = {
       options: ['creative', 'organization-logo', 'other'],
       required: true,
       access: {
-        create: ({ req }) => isPayloadAdmin(req),
-        update: ({ req }) => isPayloadAdmin(req),
+        create: ({ req }) => isPayloadAdmin(req) || req.user?.collection === 'users',
+        update: ({ req }) => isPayloadAdmin(req) || req.user?.collection === 'users',
       },
     },
     {
@@ -103,8 +117,8 @@ export const Media: CollectionConfig = {
       required: true,
       index: true,
       access: {
-        create: ({ req }) => isPayloadAdmin(req),
-        update: ({ req }) => isPayloadAdmin(req),
+        create: ({ req }) => isPayloadAdmin(req) || req.user?.collection === 'users',
+        update: ({ req }) => isPayloadAdmin(req) || req.user?.collection === 'users',
       },
     },
     {
@@ -114,8 +128,8 @@ export const Media: CollectionConfig = {
       required: true,
       index: true,
       access: {
-        create: ({ req }) => isPayloadAdmin(req),
-        update: ({ req }) => isPayloadAdmin(req),
+        create: ({ req }) => isPayloadAdmin(req) || req.user?.collection === 'users',
+        update: ({ req }) => isPayloadAdmin(req) || req.user?.collection === 'users',
       },
     },
     createFolderField({ relationTo: 'folders' }),

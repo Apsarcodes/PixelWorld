@@ -1,3 +1,6 @@
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
 import { appAuth } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
@@ -95,9 +98,9 @@ export async function POST(request: Request) {
 
   const form = await request.formData()
   const file = form.get('creative')
-  const name = text(form, 'name', 120)
-  const brandName = text(form, 'brandName', 120)
-  const headline = text(form, 'headline', 180)
+  const name = text(form, 'name', 120) || 'My Ad Campaign'
+  const brandName = text(form, 'brandName', 120) || 'PixelWorld Advertiser'
+  const headline = text(form, 'headline', 180) || 'Exclusive Promotion'
   const description = text(form, 'description', 1000)
   const callToAction = text(form, 'callToAction', 40)
   const width = integer(form, 'width')
@@ -140,12 +143,44 @@ export async function POST(request: Request) {
 
   const payload = await getPayloadClient()
   let mediaID: string | number | null = null
-  const organizationID = relationshipID(user.defaultOrganization)
+  let organizationID = relationshipID(user.defaultOrganization)
+
+  // Auto-provision organization if missing
   if (!organizationID) {
-    return Response.json(
-      { error: 'Your account does not have an active organization.' },
-      { status: 403 },
-    )
+    try {
+      const org = await payload.create({
+        collection: 'organizations',
+        overrideAccess: true,
+        data: {
+          name: `${user.firstName || 'User'}'s Organization`,
+          type: 'personal',
+          owner: user.id,
+        },
+      })
+      await payload.create({
+        collection: 'organization-memberships',
+        overrideAccess: true,
+        data: {
+          organization: org.id,
+          user: user.id,
+          role: 'owner',
+          status: 'active',
+        },
+      })
+      await payload.update({
+        collection: 'users',
+        id: user.id,
+        overrideAccess: true,
+        data: { defaultOrganization: org.id },
+      })
+      organizationID = org.id
+    } catch (orgErr) {
+      console.error('[Campaigns] Failed to auto-provision organization:', orgErr)
+      return Response.json(
+        { error: 'Your account does not have an active organization.' },
+        { status: 403 },
+      )
+    }
   }
 
   const fileBuffer = Buffer.from(await file.arrayBuffer())
@@ -163,50 +198,51 @@ export async function POST(request: Request) {
     console.warn('[R2 Storage] R2 upload skipped or unconfigured:', err)
   }
 
+  // Ensure upload directory exists dynamically at request time
+  const uploadDir =
+    process.env.VERCEL || process.env.NODE_ENV === 'production'
+      ? path.resolve(os.tmpdir(), 'media')
+      : path.resolve(process.cwd(), 'media')
+
   try {
-    let media: any = null
-    try {
-      media = await payload.create({
-        collection: 'media',
-        overrideAccess: false,
-        user,
-        data: {
-          alt: `${brandName} — ${headline}`,
-          purpose: 'creative',
-          uploadedBy: user.id,
-          organization: organizationID as any,
-          externalURL: r2PublicUrl || undefined,
-        } as any,
-        file: {
-          data: fileBuffer,
-          mimetype: file.type,
-          name: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
-          size: file.size,
-        },
-      })
-      mediaID = media.id
-    } catch (mediaError) {
-      console.warn('[Media Upload] Local filesystem write fallback triggered:', mediaError)
-      try {
-        media = await payload.create({
-          collection: 'media',
-          overrideAccess: true,
-          data: {
-            alt: `${brandName} — ${headline}`,
-            purpose: 'creative',
-            uploadedBy: user.id,
-            organization: organizationID as any,
-            externalURL: r2PublicUrl || `https://pixelword.in/media/${file.name}`,
-            filename: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
-            mimeType: file.type,
-            filesize: file.size,
-          } as any,
-        })
-        mediaID = media.id
-      } catch {
-        throw mediaError
-      }
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
     }
+  } catch {}
+
+  let safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  if (!safeFilename.includes('.')) {
+    const ext =
+      file.type === 'image/jpeg'
+        ? '.jpg'
+        : file.type === 'image/png'
+          ? '.png'
+          : file.type === 'image/webp'
+            ? '.webp'
+            : '.gif'
+    safeFilename = `${safeFilename}${ext}`
+  }
+
+  try {
+    const media = await payload.create({
+      collection: 'media',
+      overrideAccess: true,
+      user,
+      data: {
+        alt: `${brandName} — ${headline}`,
+        purpose: 'creative',
+        uploadedBy: user.id,
+        organization: organizationID as any,
+        externalURL: r2PublicUrl || undefined,
+      } as any,
+      file: {
+        data: fileBuffer,
+        mimetype: file.type,
+        name: safeFilename,
+        size: file.size,
+      },
+    })
+    mediaID = media.id
 
     const campaign = await payload.create({
       collection: 'campaigns',
@@ -232,10 +268,11 @@ export async function POST(request: Request) {
   } catch (error) {
     if (mediaID !== null) {
       await payload
-        .delete({ collection: 'media', id: mediaID, overrideAccess: false, user })
+        .delete({ collection: 'media', id: mediaID, overrideAccess: true, user })
         .catch(() => undefined)
     }
     const message = error instanceof Error ? error.message : 'Unable to save the campaign.'
+    console.error('[Campaign Save Error]', error)
     return Response.json({ error: message }, { status: 400 })
   }
 }

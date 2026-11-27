@@ -107,14 +107,21 @@ export function CreateAdScreen({
       return
     }
 
+    const finalAdName =
+      adName.trim() ||
+      `${brandName.trim() || 'Ad Campaign'} - ${new Date().toLocaleDateString()}`
+    const finalBrandName = brandName.trim() || 'PixelWorld Advertiser'
+    const finalHeadline = headline.trim() || 'Exclusive Promotion'
+    const finalDesc = desc.trim()
+
     setIsSaving(true)
     setSaveError('')
     const form = new FormData()
     form.set('creative', uploadedFile)
-    form.set('name', adName)
-    form.set('brandName', brandName)
-    form.set('headline', headline)
-    form.set('description', desc)
+    form.set('name', finalAdName)
+    form.set('brandName', finalBrandName)
+    form.set('headline', finalHeadline)
+    form.set('description', finalDesc)
     form.set('callToAction', ctaType)
     form.set('width', String(adWidth))
     form.set('height', String(adHeight))
@@ -477,6 +484,15 @@ export function CreateAdScreen({
                         if (file) {
                           setUploadedFile(file)
                           setSaveError('')
+                          if (!adName) {
+                            const rawName = file.name
+                              .replace(/\.[^/.]+$/, '')
+                              .replace(/[^a-zA-Z0-9\s_-]/g, ' ')
+                              .trim()
+                            if (rawName) {
+                              setAdName(`${rawName} Campaign`)
+                            }
+                          }
                         }
                       }}
                     />
@@ -516,7 +532,7 @@ export function CreateAdScreen({
                           Drop your ad file here
                         </div>
                         <div className="text-xs text-muted-foreground font-['JetBrains_Mono']">
-                          JPG, PNG, GIF, WebP · Max 50 MB
+                          JPG, PNG, GIF, WebP · Max 10 MB
                         </div>
                         <div className="text-xs text-muted-foreground font-['Inter']">
                           or design online above and come back to upload
@@ -524,6 +540,12 @@ export function CreateAdScreen({
                       </div>
                     )}
                   </div>
+                  {saveError && (
+                    <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl text-xs text-red-600 dark:text-red-400 font-['Inter'] flex items-center gap-2">
+                      <span className="font-bold">⚠</span>
+                      <span>{saveError}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
