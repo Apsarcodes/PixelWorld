@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const city = searchParams.get('city') || 'Chennai'
+    const city = searchParams.get('city') || 'Mumbai'
     const category = searchParams.get('category') || 'All'
     const statusFilter = searchParams.get('status') || 'all'
 

@@ -5,8 +5,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Check,
   CheckCircle2,
   Clock,
+  Copy,
   ExternalLink,
   Loader2,
   QrCode,
@@ -39,6 +41,15 @@ export function CheckoutScreen({
   const [countdown, setCountdown] = useState(15 * 60) // 15-minute lock timer
   const [utrNumber, setUtrNumber] = useState('')
   const [isConfirming, setIsConfirming] = useState(false)
+  const [copiedVpa, setCopiedVpa] = useState(false)
+
+  const copyVpa = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText('rafimmedia-1@oksbi')
+      setCopiedVpa(true)
+      setTimeout(() => setCopiedVpa(false), 2000)
+    }
+  }
 
   const [paymentDetails, setPaymentDetails] = useState<{
     orderId: string
@@ -501,57 +512,69 @@ export function CheckoutScreen({
               </div>
             </div>
 
-            {/* Dynamic UPI QR Code */}
-            <div className="my-3 sm:my-4 p-4 rounded-2xl bg-[#F8FAFC] border border-black/8 flex flex-col items-center justify-center text-center">
-              <div className="w-44 h-44 sm:w-48 sm:h-48 bg-white p-2.5 rounded-xl shadow-sm border border-black/5 flex items-center justify-center">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-                    paymentDetails.upiQrString || paymentDetails.upiIntentUrl || 'upi://pay'
-                  )}`}
-                  alt="Scan to Pay via UPI"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground font-['Inter'] mt-2.5">
-                Scan with <span className="font-semibold text-foreground">Google Pay, PhonePe, Paytm, BHIM</span> or any bank app
-              </p>
-              <div className="mt-1.5 text-xl font-black font-['Outfit'] text-[#6C5FE6]">
-                ₹{paymentDetails.amount.toLocaleString()}
-              </div>
-              <div className="text-[11px] text-muted-foreground font-['JetBrains_Mono'] mt-0.5">
-                Merchant VPA: <span className="text-foreground font-semibold">rafimmedia-1@oksbi</span>
-              </div>
-            </div>
+            {/* Dynamic UPI QR Code (Standard NPCI compliant format compatible with all UPI apps) */}
+            {(() => {
+              const formattedAm = Number(paymentDetails.amount).toFixed(2)
+              const cleanUpiString = `upi://pay?pa=rafimmedia-1@oksbi&pn=PixelWord&am=${formattedAm}&cu=INR&tn=AdBooking`
+              return (
+                <div className="my-3 sm:my-4 p-4 rounded-2xl bg-[#F8FAFC] border border-black/8 flex flex-col items-center justify-center text-center">
+                  <div className="w-48 h-48 bg-white p-2.5 rounded-xl shadow-sm border border-black/5 flex items-center justify-center">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(cleanUpiString)}`}
+                      alt="Scan to Pay via UPI"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground font-['Inter'] mt-2.5">
+                    Scan with <span className="font-semibold text-foreground">Google Pay, PhonePe, Paytm, BHIM</span> or any bank app
+                  </p>
+                  <div className="mt-1.5 text-2xl font-black font-['Outfit'] text-[#6C5FE6]">
+                    ₹{paymentDetails.amount.toLocaleString()}
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-xs font-['JetBrains_Mono'] mt-2 bg-white px-3 py-1.5 rounded-lg border border-black/8 shadow-sm">
+                    <span>UPI ID: <strong className="text-foreground">rafimmedia-1@oksbi</strong></span>
+                    <button
+                      type="button"
+                      onClick={copyVpa}
+                      className="flex items-center gap-1 text-[11px] font-['Outfit'] font-semibold text-[#6C5FE6] hover:text-[#5B4ED5] cursor-pointer ml-1"
+                    >
+                      {copiedVpa ? <Check size={13} className="text-[#00A882]" /> : <Copy size={13} />}
+                      <span>{copiedVpa ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
 
-            {/* Direct Mobile UPI Intent Buttons */}
-            <div className="space-y-1.5 mb-4">
-              <div className="text-xs font-['Outfit'] font-semibold text-muted-foreground">
-                On mobile? Tap your UPI app to pay directly:
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <a
-                  href={paymentDetails.upiIntentUrl || '#'}
-                  className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
-                >
-                  <Smartphone size={16} className="text-[#4285F4]" />
-                  <span className="text-[11px] font-['Outfit'] font-bold text-foreground">GPay</span>
-                </a>
-                <a
-                  href={paymentDetails.upiIntentUrl || '#'}
-                  className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
-                >
-                  <Smartphone size={16} className="text-[#5F259F]" />
-                  <span className="text-[11px] font-['Outfit'] font-bold text-foreground">PhonePe</span>
-                </a>
-                <a
-                  href={paymentDetails.upiIntentUrl || '#'}
-                  className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
-                >
-                  <Smartphone size={16} className="text-[#00BAF2]" />
-                  <span className="text-[11px] font-['Outfit'] font-bold text-foreground">Paytm</span>
-                </a>
-              </div>
-            </div>
+                  {/* Direct Mobile UPI Intent Buttons */}
+                  <div className="w-full space-y-1.5 mt-4 pt-3 border-t border-black/8">
+                    <div className="text-xs font-['Outfit'] font-semibold text-muted-foreground text-left">
+                      On mobile? Tap your UPI app to pay directly:
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <a
+                        href={cleanUpiString}
+                        className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
+                      >
+                        <Smartphone size={16} className="text-[#4285F4]" />
+                        <span className="text-[11px] font-['Outfit'] font-bold text-foreground">GPay</span>
+                      </a>
+                      <a
+                        href={cleanUpiString}
+                        className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
+                      >
+                        <Smartphone size={16} className="text-[#5F259F]" />
+                        <span className="text-[11px] font-['Outfit'] font-bold text-foreground">PhonePe</span>
+                      </a>
+                      <a
+                        href={cleanUpiString}
+                        className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
+                      >
+                        <Smartphone size={16} className="text-[#00BAF2]" />
+                        <span className="text-[11px] font-['Outfit'] font-bold text-foreground">Paytm</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             {error && (
               <div className="p-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500 font-['Inter'] flex items-center gap-2">

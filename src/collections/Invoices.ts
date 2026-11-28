@@ -23,7 +23,7 @@ export const Invoices: CollectionConfig = {
       name: 'organization',
       type: 'relationship',
       relationTo: 'organizations',
-      required: true,
+      required: false,
       index: true,
     },
     {

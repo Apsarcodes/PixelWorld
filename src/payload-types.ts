@@ -675,8 +675,8 @@ export interface Payment {
   amount: number;
   currency: string;
   status: 'pending' | 'success' | 'failed' | 'refunded';
-  reservation: number | Reservation;
-  campaign: number | Campaign;
+  reservation?: (number | null) | Reservation;
+  campaign?: (number | null) | Campaign;
   organization: number | Organization;
   user: number | User;
   verifiedAt?: string | null;
@@ -719,7 +719,7 @@ export interface Invoice {
   invoiceNumber: string;
   organization: number | Organization;
   user: number | User;
-  campaign: number | Campaign;
+  campaign?: (number | null) | Campaign;
   payment?: (number | null) | Payment;
   amount: number;
   tax?: number | null;

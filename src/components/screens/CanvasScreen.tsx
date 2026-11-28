@@ -52,13 +52,14 @@ export function CanvasScreen({
   const canvasRef = useRef<HTMLDivElement>(null)
   const persistedCampaign = campaigns[0] ?? null
 
+  const activeCity = selectedCity || 'mumbai'
   const formattedCity =
-    (selectedCity || 'Chennai').charAt(0).toUpperCase() + (selectedCity || 'Chennai').slice(1)
+    activeCity.charAt(0).toUpperCase() + activeCity.slice(1)
 
   useEffect(() => {
     let isMounted = true
     setIsLoadingSlots(true)
-    const targetCity = selectedCity || 'chennai'
+    const targetCity = selectedCity || 'mumbai'
     fetch(`/api/inventory/slots?city=${encodeURIComponent(targetCity)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {

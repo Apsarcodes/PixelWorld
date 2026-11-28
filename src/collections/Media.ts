@@ -138,6 +138,7 @@ export const Media: CollectionConfig = {
     createTagField({ relationTo: 'tags' }),
   ],
   upload: {
+    disableLocalStorage: true,
     staticDir: uploadDir,
     mimeTypes: [
       'image/jpeg',

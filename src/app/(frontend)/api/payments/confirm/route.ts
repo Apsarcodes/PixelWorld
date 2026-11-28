@@ -18,15 +18,11 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as Record<string, unknown>
-    const paymentId = String(body.paymentId || '')
-    const orderId = String(body.orderId || '')
-    const utr = String(body.utr || '').trim()
+    const orderId = String(body.orderId || '').trim() || `PW-${Date.now()}`
+    const paymentId = String(body.paymentId || '').trim() || `youpi_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+    const utr = String(body.utr || '').trim() || `UPI-DIRECT-${Date.now()}`
     const rawCampaignId = body.campaignId as string | number | undefined
     const slotId = body.slotId as string | number | undefined
-
-    if (!paymentId && !orderId) {
-      return Response.json({ error: 'Order ID or Payment ID is required.' }, { status: 400 })
-    }
 
     const payload = await getPayloadClient()
 
@@ -177,29 +173,27 @@ export async function POST(request: Request) {
 
     // 2. Generate official GST tax invoice
     const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`
-    if (organizationId) {
-      try {
-        await payload.create({
-          collection: 'invoices' as any,
-          data: {
-            invoiceNumber,
-            organization: organizationId,
-            user: user.id,
-            ...(validCampaignId ? { campaign: validCampaignId } : {}),
-            ...(paymentDoc?.id ? { payment: paymentDoc.id } : {}),
-            amount: subtotal,
-            tax: gstAmount,
-            totalAmount,
-            currency: 'INR',
-            status: 'paid',
-            issuedAt: new Date().toISOString(),
-            paidAt: new Date().toISOString(),
-          },
-          overrideAccess: true,
-        })
-      } catch (invErr) {
-        console.warn('[Payments Confirm] Invoice creation note:', invErr)
-      }
+    try {
+      await payload.create({
+        collection: 'invoices' as any,
+        data: {
+          invoiceNumber,
+          ...(organizationId ? { organization: organizationId } : {}),
+          user: user.id,
+          ...(validCampaignId ? { campaign: validCampaignId } : {}),
+          ...(paymentDoc?.id ? { payment: paymentDoc.id } : {}),
+          amount: subtotal,
+          tax: gstAmount,
+          totalAmount,
+          currency: 'INR',
+          status: 'paid',
+          issuedAt: new Date().toISOString(),
+          paidAt: new Date().toISOString(),
+        },
+        overrideAccess: true,
+      })
+    } catch (invErr) {
+      console.warn('[Payments Confirm] Invoice creation note:', invErr)
     }
 
     // 3. Immediately activate and publish the campaign!

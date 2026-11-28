@@ -17,11 +17,19 @@ import {
   Users,
   Megaphone,
 } from 'lucide-react'
-import type { Screen } from '@/types/pixelworld'
+import type { Screen, AppUser } from '@/types/pixelworld'
 import { PwLogo, PrimaryBtn, GhostBtn, Badge, StatCard } from '@/components/common/UIComponents'
 import { WorldMap } from '@/components/common/WorldMap'
 
-export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+export function LandingScreen({
+  onNavigate,
+  user,
+  onLogout,
+}: {
+  onNavigate: (s: Screen) => void
+  user?: AppUser | null
+  onLogout?: () => void
+}) {
   const [navOpen, setNavOpen] = useState(false)
 
   return (
@@ -42,7 +50,7 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
       `}</style>
 
       {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-[rgba(245,247,252,0.85)] backdrop-blur-xl border-b border-black/5">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-8 py-3.5 sm:py-4 bg-[rgba(245,247,252,0.92)] backdrop-blur-xl border-b border-black/5 shadow-sm">
         <PwLogo />
         <nav className="hidden md:flex items-center gap-7">
           <button
@@ -67,13 +75,37 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
             Pricing
           </button>
         </nav>
-        <div className="flex items-center gap-3">
-          <GhostBtn small onClick={() => onNavigate('login')}>
-            Sign In
-          </GhostBtn>
-          <PrimaryBtn small onClick={() => onNavigate('signup')}>
-            Sign Up
-          </PrimaryBtn>
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {user ? (
+            <>
+              <button
+                onClick={() => onNavigate('dashboard')}
+                className="hidden sm:inline-block text-xs sm:text-sm font-['Outfit'] font-semibold text-[#6C5FE6] hover:underline px-2"
+              >
+                My Campaigns
+              </button>
+              <button
+                onClick={() => onNavigate(user.role === 'admin' ? 'admin' : 'profile')}
+                className="px-3 py-1.5 rounded-xl border border-black/8 bg-card text-foreground text-xs sm:text-sm font-['Outfit'] font-semibold hover:bg-black/5 transition-all shadow-sm"
+              >
+                {user.firstName || 'My Account'}
+              </button>
+              {onLogout && (
+                <GhostBtn small onClick={onLogout}>
+                  Sign Out
+                </GhostBtn>
+              )}
+            </>
+          ) : (
+            <>
+              <GhostBtn small onClick={() => onNavigate('login')}>
+                Sign In
+              </GhostBtn>
+              <PrimaryBtn small onClick={() => onNavigate('signup')}>
+                Sign Up
+              </PrimaryBtn>
+            </>
+          )}
         </div>
       </header>
 
@@ -110,9 +142,9 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
             <Globe size={18} />
             Explore Indian Metros
           </PrimaryBtn>
-          <GhostBtn onClick={() => onNavigate('create-ad')} className="text-base px-8 py-4">
+          <GhostBtn onClick={() => onNavigate(user ? 'create-ad' : 'canvas')} className="text-base px-8 py-4">
             <Megaphone size={18} />
-            Post Your Ad
+            {user ? 'Post Your Ad' : 'Explore Canvas'}
           </GhostBtn>
         </div>
 

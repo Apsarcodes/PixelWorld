@@ -154,14 +154,11 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
             localStorage.removeItem('pixelworld_signed_out')
           }
           setCurrentUser(result.user)
-          // Post-login / session restore: Show ad canvas by default or restore saved screen
+          // Session restore: keep user's active screen
           if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('pixelworld_active_screen') as Screen
-            if (saved && saved !== 'login' && saved !== 'signup' && saved !== 'landing') {
+            if (saved && saved !== 'login' && saved !== 'signup') {
               setScreen(saved)
-            } else {
-              const isAdmin = result.user.role === 'admin' || isOwnerEmail(result.user.email)
-              setScreen(isAdmin ? 'admin' : 'canvas')
             }
           }
         } else {
@@ -279,7 +276,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
 
   return (
     <div key={screen} className="w-full">
-      {screen === 'landing' && <LandingScreen onNavigate={nav} />}
+      {screen === 'landing' && <LandingScreen onNavigate={nav} user={currentUser} onLogout={logout} />}
       {screen === 'country' && (
         <CountryScreen
           onNavigate={nav}
@@ -335,7 +332,6 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
             }
             currentUserRef.current = user
             setCurrentUser(user)
-            detectUserCity().then(handleSelectCity).catch(() => {})
             const isAdmin = user.role === 'admin' || isOwnerEmail(user.email)
             nav(isAdmin ? 'admin' : 'canvas', user)
           }}
@@ -350,7 +346,6 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
             }
             currentUserRef.current = user
             setCurrentUser(user)
-            detectUserCity().then(handleSelectCity).catch(() => {})
             const isAdmin = user.role === 'admin' || isOwnerEmail(user.email)
             nav(isAdmin ? 'admin' : 'canvas', user)
           }}
