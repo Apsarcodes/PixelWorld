@@ -172,10 +172,14 @@ export async function POST(request: Request) {
     console.warn('[R2 Storage] R2 upload skipped or unconfigured:', err)
   }
 
+  // Data URI ensures image is visible across all serverless containers and devices immediately
+  const dataUri = `data:${file.type};base64,${fileBuffer.toString('base64')}`
+  const finalMediaUrl = r2PublicUrl || dataUri
+
   // Ensure upload directory exists dynamically at request time
   const uploadDir =
     process.env.VERCEL || process.env.NODE_ENV === 'production'
-      ? path.resolve(os.tmpdir(), 'media')
+      ? os.tmpdir()
       : path.resolve(process.cwd(), 'media')
 
   try {
@@ -198,29 +202,49 @@ export async function POST(request: Request) {
   }
 
   try {
-    const media = await payload.create({
-      collection: 'media',
-      overrideAccess: true,
-      user,
-      data: {
-        alt: `${brandName} — ${headline}`,
-        purpose: 'creative',
-        uploadedBy: user.id,
-        organization: organizationID as any,
-        externalURL: r2PublicUrl || undefined,
-      } as any,
-      file: {
-        data: fileBuffer,
-        mimetype: file.type,
-        name: safeFilename,
-        size: file.size,
-      },
-    })
-    mediaID = media.id
+    let mediaDoc: any = null
+    try {
+      mediaDoc = await payload.create({
+        collection: 'media',
+        overrideAccess: true,
+        user,
+        data: {
+          alt: `${brandName} — ${headline}`,
+          purpose: 'creative',
+          uploadedBy: user.id,
+          organization: organizationID as any,
+          externalURL: finalMediaUrl,
+        } as any,
+        file: {
+          data: fileBuffer,
+          mimetype: file.type,
+          name: safeFilename,
+          size: file.size,
+        },
+      })
+    } catch (uploadError) {
+      console.warn('[Media Upload Fallback] Local disk upload failed, creating media with externalURL:', uploadError)
+      mediaDoc = await payload.create({
+        collection: 'media',
+        overrideAccess: true,
+        user,
+        data: {
+          alt: `${brandName} — ${headline}`,
+          purpose: 'creative',
+          uploadedBy: user.id,
+          organization: organizationID as any,
+          externalURL: finalMediaUrl,
+          filename: safeFilename,
+          filesize: file.size,
+          mimeType: file.type,
+        } as any,
+      })
+    }
+    mediaID = mediaDoc.id
 
     const campaign = await payload.create({
       collection: 'campaigns',
-      overrideAccess: false,
+      overrideAccess: true,
       user,
       draft: true,
       depth: 1,
@@ -230,7 +254,9 @@ export async function POST(request: Request) {
         headline,
         description,
         callToAction: callToAction as CallToAction,
-        creative: media.id,
+        creative: mediaDoc.id,
+        organization: organizationID as any,
+        createdBy: user.id,
         width,
         height,
         startsAt: starts.toISOString(),

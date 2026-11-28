@@ -59,6 +59,9 @@ export function LoginScreen({
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Unable to sign in.')
       savePreviewSession(result.token || result.previewToken)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('pixelworld_signed_out')
+      }
       const sessionResponse = await fetch('/api/app-auth/me', {
         credentials: 'include',
         cache: 'no-store',

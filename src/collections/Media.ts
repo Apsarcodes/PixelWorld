@@ -15,7 +15,7 @@ import {
 export const getUploadDir = () => {
   const dir =
     process.env.VERCEL || process.env.NODE_ENV === 'production'
-      ? path.resolve(os.tmpdir(), 'media')
+      ? os.tmpdir()
       : path.resolve(process.cwd(), 'media')
   try {
     if (!fs.existsSync(dir)) {
@@ -139,7 +139,17 @@ export const Media: CollectionConfig = {
   ],
   upload: {
     staticDir: uploadDir,
-    mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+    mimeTypes: [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/svg+xml',
+      'image/avif',
+      'image/heic',
+      'image/heif',
+      'image/*',
+    ],
     modifyResponseHeaders: ({ headers }) => {
       headers.set('Cache-Control', 'private, no-store')
       headers.set('X-Content-Type-Options', 'nosniff')

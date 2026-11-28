@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     await upsertGoogleAccount(profile)
 
     // Redirect to canvas screen where PixelWorldApp auto-detects user session
-    return Response.redirect(`${origin}/?screen=canvas`, 302)
+    return Response.redirect(`${origin}/?screen=canvas&auth_success=1`, 302)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Google authentication failed'
     console.error('Google OAuth callback error:', err)

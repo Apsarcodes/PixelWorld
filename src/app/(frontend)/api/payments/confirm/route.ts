@@ -31,12 +31,37 @@ export async function POST(request: Request) {
     const payload = await getPayloadClient()
 
     // Resolve or provision default organization
-    let organizationId: string | number | undefined = undefined
-    try {
-      organizationId = await ensureUserOrganization(user as any, payload)
-      user.defaultOrganization = organizationId as any
-    } catch (err) {
-      console.warn('[Payments Confirm] Organization resolution error:', err)
+    let organizationId: string | number | undefined =
+      user.defaultOrganization &&
+      typeof user.defaultOrganization === 'object' &&
+      'id' in user.defaultOrganization
+        ? (user.defaultOrganization as any).id
+        : (user.defaultOrganization as any)
+
+    if (!organizationId) {
+      try {
+        organizationId = await ensureUserOrganization(user as any, payload)
+        user.defaultOrganization = organizationId as any
+      } catch (err) {
+        console.warn('[Payments Confirm] Organization resolution error:', err)
+      }
+    }
+
+    // Safety fallback: if still missing, ensure organization exists
+    if (!organizationId) {
+      try {
+        const orgs = await payload.find({ collection: 'organizations', limit: 1, overrideAccess: true })
+        if (orgs.docs.length > 0) {
+          organizationId = orgs.docs[0].id
+        } else {
+          const newOrg = await payload.create({
+            collection: 'organizations',
+            overrideAccess: true,
+            data: { name: 'PixelWord Personal Org', type: 'personal', owner: user.id },
+          })
+          organizationId = newOrg.id
+        }
+      } catch {}
     }
 
     // Verify campaign validity if provided
@@ -54,25 +79,31 @@ export async function POST(request: Request) {
       }
     }
 
-    // 1. Check if a payment already exists
+    // 1. Check if a payment already exists by indexed columns (never query nested json metadata in SQL)
     let paymentDoc: any = null
-    const queryConditions: any[] = []
-    if (paymentId) queryConditions.push({ paymentId: { equals: paymentId } })
-    if (utr) queryConditions.push({ transactionHash: { equals: utr } })
-    if (orderId) queryConditions.push({ 'metadata.orderId': { equals: orderId } })
-
-    if (queryConditions.length > 0) {
+    if (paymentId) {
       try {
-        const existingPayments = await payload.find({
+        const existing = await payload.find({
           collection: 'payments' as any,
-          where: queryConditions.length === 1 ? queryConditions[0] : { or: queryConditions },
+          where: { paymentId: { equals: paymentId } },
           limit: 1,
           overrideAccess: true,
         })
-        paymentDoc = existingPayments.docs[0]
+        if (existing.docs.length > 0) paymentDoc = existing.docs[0]
       } catch (findErr) {
         console.warn('[Payments Confirm] Existing payment lookup note:', findErr)
       }
+    }
+    if (!paymentDoc && utr) {
+      try {
+        const existingByUtr = await payload.find({
+          collection: 'payments' as any,
+          where: { transactionHash: { equals: utr } },
+          limit: 1,
+          overrideAccess: true,
+        })
+        if (existingByUtr.docs.length > 0) paymentDoc = existingByUtr.docs[0]
+      } catch {}
     }
 
     const totalAmount = Number(body.amount) || 50
@@ -93,29 +124,55 @@ export async function POST(request: Request) {
         overrideAccess: true,
       })
     } else {
-      // Create new verified payment record
-      paymentDoc = await payload.create({
-        collection: 'payments' as any,
-        data: {
-          paymentId: paymentId || `youpi_${Date.now()}`,
-          provider: 'youpi-pg',
-          transactionHash: utr || `UPI-UTR-${Date.now()}`,
-          amount: totalAmount,
-          currency: 'INR',
-          status: 'success',
-          ...(validCampaignId ? { campaign: validCampaignId } : {}),
-          ...(organizationId ? { organization: organizationId } : {}),
-          user: user.id,
-          verifiedAt: new Date().toISOString(),
-          metadata: {
-            orderId,
-            utr,
-            source: 'upi_direct_settlement',
-            merchantVpa: 'rafimmedia-1@oksbi',
+      // Create new verified payment record with safe upsert
+      const payIdToUse = paymentId || `youpi_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+      try {
+        paymentDoc = await payload.create({
+          collection: 'payments' as any,
+          data: {
+            paymentId: payIdToUse,
+            provider: 'youpi-pg',
+            transactionHash: utr || `UPI-UTR-${Date.now()}`,
+            amount: totalAmount,
+            currency: 'INR',
+            status: 'success',
+            ...(validCampaignId ? { campaign: validCampaignId } : {}),
+            ...(organizationId ? { organization: organizationId } : {}),
+            user: user.id,
+            verifiedAt: new Date().toISOString(),
+            metadata: {
+              orderId,
+              utr,
+              source: 'upi_direct_settlement',
+              merchantVpa: 'rafimmedia-1@oksbi',
+            },
           },
-        },
-        overrideAccess: true,
-      })
+          overrideAccess: true,
+        })
+      } catch (createErr) {
+        console.warn('[Payments Confirm] Upsert fallback on create note:', createErr)
+        try {
+          const fallback = await payload.find({
+            collection: 'payments' as any,
+            where: { paymentId: { equals: payIdToUse } },
+            limit: 1,
+            overrideAccess: true,
+          })
+          if (fallback.docs.length > 0) {
+            paymentDoc = await payload.update({
+              collection: 'payments' as any,
+              id: fallback.docs[0].id,
+              data: {
+                status: 'success',
+                transactionHash: utr || `UPI-${Date.now()}`,
+                verifiedAt: new Date().toISOString(),
+                ...(validCampaignId ? { campaign: validCampaignId } : {}),
+              },
+              overrideAccess: true,
+            })
+          }
+        } catch {}
+      }
     }
 
     // 2. Generate official GST tax invoice

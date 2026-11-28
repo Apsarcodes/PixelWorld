@@ -65,6 +65,27 @@ export function CreateAdScreen({
   const [isSaving, setIsSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Ensure dimension and size categories stay 100% in sync with the selected space from ad canvas
+  useEffect(() => {
+    if (initialDimensions) {
+      const cat: 'small' | 'medium' | 'large' =
+        initialDimensions.sizeCategory === 'small' || initialDimensions.width === 100
+          ? 'small'
+          : initialDimensions.sizeCategory === 'large' || initialDimensions.width === 400
+            ? 'large'
+            : 'medium'
+      setSizeCategory(cat)
+      setAdWidth(initialDimensions.width || (cat === 'small' ? 100 : cat === 'large' ? 400 : 200))
+      setAdHeight(initialDimensions.height || (cat === 'small' ? 100 : 200))
+      if (initialDimensions.duration) {
+        setDurationPreset(String(initialDimensions.duration))
+        const from = dateFrom || today
+        const toDate = new Date(new Date(from).getTime() + initialDimensions.duration * 86400000)
+        setDateTo(toDate.toISOString().split('T')[0])
+      }
+    }
+  }, [initialDimensions])
+
   const DURATION_PRESETS = [
     { label: '1 Day', value: '1', days: 1 },
     { label: '3 Days', value: '3', days: 3 },
@@ -696,7 +717,7 @@ export function CreateAdScreen({
                           Total Amount
                         </span>
                         <span className="text-[10px] text-muted-foreground font-['JetBrains_Mono']">
-                          Inc. 18% GST & city weighting
+                          Inc. 18% GST (Transparent Rate)
                         </span>
                       </div>
                       <span className="font-['Outfit'] font-black text-2xl text-[#6C5FE6]">
