@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import type { AppUser, StoredCampaign, Screen } from '@/types/pixelworld'
 import { previewAuthorizationHeaders, clearPreviewSession } from '@/lib/session'
 import { LandingScreen } from '@/components/screens/LandingScreen'
@@ -17,6 +17,7 @@ import { LoginScreen } from '@/components/screens/LoginScreen'
 import { SignupScreen } from '@/components/screens/SignupScreen'
 import { UserProfileScreen } from '@/components/screens/UserProfileScreen'
 import { isOwnerEmail } from '@/constants/auth'
+import { detectUserCity } from '@/lib/geo'
 
 export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | null }) {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
@@ -25,6 +26,18 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
     }
     return initialUser
   })
+
+  const currentUserRef = useRef<AppUser | null>(currentUser)
+  useEffect(() => {
+    currentUserRef.current = currentUser
+  }, [currentUser])
+
+  // Geolocation auto-detection on initial mount if no city stored
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('pixelworld_selected_city')) {
+      detectUserCity().then(handleSelectCity).catch(() => {})
+    }
+  }, [])
 
   const [screen, setScreen] = useState<Screen>(() => {
     if (typeof window !== 'undefined') {
@@ -173,7 +186,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       .catch(() => setCampaigns([]))
   }, [currentUser])
 
-  const nav = (nextScreen: Screen) => {
+  const nav = (nextScreen: Screen, overrideUser?: AppUser | null) => {
     if (nextScreen !== screen) {
       setHistory((prev) => [...prev, screen])
     }
@@ -186,7 +199,9 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       }
     }
 
-    if (!currentUser) {
+    const activeUser = overrideUser !== undefined ? overrideUser : currentUserRef.current
+
+    if (!activeUser) {
       // Public visitors can freely view landing, country, canvas
       if (
         nextScreen === 'landing' ||
@@ -202,7 +217,7 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
       return
     }
 
-    const isAdmin = currentUser.role === 'admin' || isOwnerEmail(currentUser.email)
+    const isAdmin = activeUser.role === 'admin' || isOwnerEmail(activeUser.email)
 
     // Admin role separation: Admins cannot make payments or book spaces; they manage inventory & view revenue
     if (isAdmin) {
@@ -310,9 +325,11 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
             if (typeof window !== 'undefined') {
               localStorage.removeItem('pixelworld_signed_out')
             }
+            currentUserRef.current = user
             setCurrentUser(user)
+            detectUserCity().then(handleSelectCity).catch(() => {})
             const isAdmin = user.role === 'admin' || isOwnerEmail(user.email)
-            nav(isAdmin ? 'admin' : 'canvas')
+            nav(isAdmin ? 'admin' : 'canvas', user)
           }}
         />
       )}
@@ -323,9 +340,11 @@ export default function PixelWorldApp({ initialUser }: { initialUser: AppUser | 
             if (typeof window !== 'undefined') {
               localStorage.removeItem('pixelworld_signed_out')
             }
+            currentUserRef.current = user
             setCurrentUser(user)
+            detectUserCity().then(handleSelectCity).catch(() => {})
             const isAdmin = user.role === 'admin' || isOwnerEmail(user.email)
-            nav(isAdmin ? 'admin' : 'canvas')
+            nav(isAdmin ? 'admin' : 'canvas', user)
           }}
         />
       )}

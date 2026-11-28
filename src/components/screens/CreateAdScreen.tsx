@@ -42,6 +42,8 @@ export function CreateAdScreen({
   const [sizeCategory, setSizeCategory] = useState<'small' | 'medium' | 'large'>(() => {
     if (initialDimensions?.sizeCategory === 'small' || initialCampaign?.sizeCategory === 'small') return 'small'
     if (initialDimensions?.sizeCategory === 'large' || initialCampaign?.sizeCategory === 'large') return 'large'
+    if (initialDimensions?.width === 100) return 'small'
+    if (initialDimensions?.width === 400) return 'large'
     return 'medium'
   })
   const [adWidth, setAdWidth] = useState(() =>
@@ -51,12 +53,12 @@ export function CreateAdScreen({
     sizeCategory === 'small' ? 100 : sizeCategory === 'large' ? 200 : 200
   )
   const today = new Date().toISOString().split('T')[0]
-  const defaultTo = new Date(Date.now() + (initialDimensions?.duration ?? 30) * 86400000).toISOString().split('T')[0]
+  const defaultTo = new Date(Date.now() + (initialDimensions?.duration ?? 1) * 86400000).toISOString().split('T')[0]
   const [dateFrom, setDateFrom] = useState(initialCampaign?.startsAt?.split('T')[0] ?? today)
   const [dateTo, setDateTo] = useState(
     initialCampaign?.endsAt?.split('T')[0] ?? defaultTo,
   )
-  const [durationPreset, setDurationPreset] = useState<string>(String(initialDimensions?.duration ?? '30'))
+  const [durationPreset, setDurationPreset] = useState<string>(String(initialDimensions?.duration ?? '1'))
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [savedCampaign, setSavedCampaign] = useState<StoredCampaign | null>(initialCampaign ?? null)
   const [saveError, setSaveError] = useState('')
@@ -662,15 +664,14 @@ export function CreateAdScreen({
                     <span className="text-sm font-['Outfit'] font-bold text-foreground">
                       Dynamic Cost Breakdown
                     </span>
-                    <span className="text-[10px] font-['JetBrains_Mono'] px-2 py-0.5 rounded bg-[#6C5FE6]/10 text-[#6C5FE6] font-semibold">
-                      {dynamicPrice.cityTier} ({dynamicPrice.cityMultiplier}×)
+                    <span className="text-[10px] font-['JetBrains_Mono'] px-2 py-0.5 rounded bg-[#00A882]/10 text-[#00A882] font-semibold">
+                      Live Canvas Rate
                     </span>
                   </div>
                   <div className="space-y-2 text-sm">
                     {[
                       ['Ad Format', `${SIZE_CONFIGS[sizeCategory].label} (${adWidth} × ${adHeight} px)`],
-                      ['Market Base', `₹${SIZE_CONFIGS[sizeCategory].baseDaily}/day`],
-                      ['Effective Rate', `₹${dynamicPrice.basePriceDaily}/day`],
+                      ['Daily Rate', `₹${SIZE_CONFIGS[sizeCategory].baseDaily}/day`],
                       ['Duration', `${days} day${days !== 1 ? 's' : ''}`],
                       ...(dynamicPrice.durationDiscountPct > 0
                         ? [['Duration Discount', `-${dynamicPrice.durationDiscountPct}% applied`]]

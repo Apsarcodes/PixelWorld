@@ -1,9 +1,9 @@
 import 'server-only'
 import { isOwnerEmail } from '@/constants/auth'
-
 import crypto from 'crypto'
 import { getPayloadClient } from '@/lib/payload'
 import { appAuth } from '@/lib/app-auth'
+import { ensureUserOrganization } from '@/lib/organization'
 
 export interface GoogleUserProfile {
   email: string
@@ -147,6 +147,14 @@ export async function upsertGoogleAccount(profile: GoogleUserProfile) {
       overrideAccess: true,
       data: { role: 'admin' },
     })
+  }
+
+  // Ensure organization is linked to the user
+  try {
+    const orgId = await ensureUserOrganization(userDoc as any, payload)
+    ;(userDoc as any).defaultOrganization = orgId
+  } catch (orgErr) {
+    console.warn('[Google Auth] Organization provisioning warning:', orgErr)
   }
 
   // 3. Issue authentic session token and set session cookie

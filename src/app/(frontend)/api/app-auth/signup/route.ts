@@ -2,6 +2,7 @@ import { appAuth, isEmbeddedPreviewRuntime } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { isStrongPassword, isValidEmail, sanitizeString } from '@/lib/security'
+import { ensureUserOrganization } from '@/lib/organization'
 
 const accountTypes = new Set(['advertiser', 'business', 'agency'])
 const categoryValues = [
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
     }
 
     const payload = await getPayloadClient()
-    await payload.create({
+    const createdUser = await payload.create({
       collection: 'users',
       overrideAccess: false,
       user: null,
@@ -103,6 +104,12 @@ export async function POST(request: Request) {
         termsAcceptedAt: new Date().toISOString(),
       },
     })
+
+    try {
+      await ensureUserOrganization(createdUser as any, payload)
+    } catch (orgErr) {
+      console.warn('[Signup] Organization provisioning warning:', orgErr)
+    }
 
     const result = await appAuth.login(email, password)
     return Response.json(

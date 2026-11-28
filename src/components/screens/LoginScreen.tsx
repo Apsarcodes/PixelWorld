@@ -69,7 +69,6 @@ export function LoginScreen({
         throw new Error('We could not verify your sign-in session. Please try again.')
       }
       onAuthenticated(session.user)
-      onNavigate('dashboard')
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : 'Unable to sign in.')
     } finally {

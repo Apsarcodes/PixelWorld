@@ -2,6 +2,7 @@ import { appAuth } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { sendOrderConfirmationEmail } from '@/lib/email/resend'
+import { ensureUserOrganization } from '@/lib/organization'
 
 export async function POST(request: Request) {
   try {
@@ -30,42 +31,12 @@ export async function POST(request: Request) {
     const payload = await getPayloadClient()
 
     // Resolve or provision default organization
-    let organizationId =
-      user.defaultOrganization && typeof user.defaultOrganization === 'object' && 'id' in user.defaultOrganization
-        ? (user.defaultOrganization as { id: string | number }).id
-        : user.defaultOrganization
-
-    if (!organizationId) {
-      try {
-        const org = await payload.create({
-          collection: 'organizations',
-          overrideAccess: true,
-          data: {
-            name: `${user.firstName || 'User'}'s Organization`,
-            type: 'personal',
-            owner: user.id,
-          },
-        })
-        await payload.create({
-          collection: 'organization-memberships',
-          overrideAccess: true,
-          data: {
-            organization: org.id,
-            user: user.id,
-            role: 'owner',
-            status: 'active',
-          },
-        })
-        await payload.update({
-          collection: 'users',
-          id: user.id,
-          overrideAccess: true,
-          data: { defaultOrganization: org.id },
-        })
-        organizationId = org.id
-      } catch (err) {
-        console.warn('[Payments Confirm] Organization auto-provision warning:', err)
-      }
+    let organizationId: string | number | undefined = undefined
+    try {
+      organizationId = await ensureUserOrganization(user as any, payload)
+      user.defaultOrganization = organizationId as any
+    } catch (err) {
+      console.warn('[Payments Confirm] Organization resolution error:', err)
     }
 
     // Verify campaign validity if provided

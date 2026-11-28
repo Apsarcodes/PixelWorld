@@ -50,8 +50,8 @@ const CITY_TIERS: Record<string, { tier: 'Tier 1' | 'Tier 1.5' | 'Tier 2'; mult:
 
 export const SIZE_CONFIGS: Record<SizeCategory, { label: string; dims: string; width: number; height: number; baseDaily: number; mult: number }> = {
   small: { label: 'Small', dims: '100 × 100 px', width: 100, height: 100, baseDaily: 50, mult: 1.0 },
-  medium: { label: 'Medium', dims: '200 × 200 px', width: 200, height: 200, baseDaily: 150, mult: 2.0 },
-  large: { label: 'Large', dims: '400 × 200 px', width: 400, height: 200, baseDaily: 300, mult: 3.5 },
+  medium: { label: 'Medium', dims: '200 × 200 px', width: 200, height: 200, baseDaily: 150, mult: 1.0 },
+  large: { label: 'Large', dims: '400 × 200 px', width: 400, height: 200, baseDaily: 300, mult: 1.0 },
 }
 
 const ADDON_PRICING: Record<string, { name: string; price: number }> = {
@@ -62,10 +62,8 @@ const ADDON_PRICING: Record<string, { name: string; price: number }> = {
 }
 
 export function calculateDynamicPrice(options: PricingOptions = {}): PricingBreakdown {
-  const cityKey = (options.city || 'chennai').toLowerCase().trim()
-  const cityInfo = CITY_TIERS[cityKey] || { tier: 'Tier 2' as const, mult: 1.0 }
-
-  const durationDays = Math.max(1, Math.min(365, Number(options.durationDays) || 30))
+  const city = options.city || 'Chennai'
+  const durationDays = Math.max(1, Math.min(365, Number(options.durationDays) || 1))
 
   // Duration Discount
   let durationDiscountPct = 0
@@ -89,13 +87,13 @@ export function calculateDynamicPrice(options: PricingOptions = {}): PricingBrea
   const dims = selectedConfig.dims
   const basePriceDaily = selectedConfig.baseDaily
 
-  // Adjust daily rate for city tier
-  const effectiveDailyRate = Math.round(basePriceDaily * cityInfo.mult)
+  // Transparent rate across all canvases
+  const effectiveDailyRate = basePriceDaily
   const rawRentalTotal = effectiveDailyRate * durationDays
   const discountAmount = Math.round(rawRentalTotal * (durationDiscountPct / 100))
-  const spaceRentalSubtotal = Math.max(99, rawRentalTotal - discountAmount)
+  const spaceRentalSubtotal = Math.max(0, rawRentalTotal - discountAmount)
 
-  // Addons
+  // Addons (optional power-ups for future enhancement, default 0)
   const activeAddons: Array<{ id: string; name: string; price: number }> = []
   let addonsTotal = 0
 
@@ -118,9 +116,9 @@ export function calculateDynamicPrice(options: PricingOptions = {}): PricingBrea
   const totalAmount = subtotal + gstAmount
 
   return {
-    city: options.city || 'Chennai',
-    cityTier: cityInfo.tier,
-    cityMultiplier: cityInfo.mult,
+    city,
+    cityTier: 'Tier 1',
+    cityMultiplier: 1.0,
     sizeCategory,
     dimensions: dims,
     durationDays,

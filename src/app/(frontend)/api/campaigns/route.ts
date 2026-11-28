@@ -5,6 +5,7 @@ import { appAuth } from '@/lib/app-auth'
 import { getPayloadClient } from '@/lib/payload'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { isAllowedImageMimeType, sanitizeString } from '@/lib/security'
+import { ensureUserOrganization } from '@/lib/organization'
 import type { Campaign } from '@/payload-types'
 
 const CTA_VALUES = [
@@ -143,44 +144,17 @@ export async function POST(request: Request) {
 
   const payload = await getPayloadClient()
   let mediaID: string | number | null = null
-  let organizationID = relationshipID(user.defaultOrganization)
+  let organizationID: string | number
 
-  // Auto-provision organization if missing
-  if (!organizationID) {
-    try {
-      const org = await payload.create({
-        collection: 'organizations',
-        overrideAccess: true,
-        data: {
-          name: `${user.firstName || 'User'}'s Organization`,
-          type: 'personal',
-          owner: user.id,
-        },
-      })
-      await payload.create({
-        collection: 'organization-memberships',
-        overrideAccess: true,
-        data: {
-          organization: org.id,
-          user: user.id,
-          role: 'owner',
-          status: 'active',
-        },
-      })
-      await payload.update({
-        collection: 'users',
-        id: user.id,
-        overrideAccess: true,
-        data: { defaultOrganization: org.id },
-      })
-      organizationID = org.id
-    } catch (orgErr) {
-      console.error('[Campaigns] Failed to auto-provision organization:', orgErr)
-      return Response.json(
-        { error: 'Your account does not have an active organization.' },
-        { status: 403 },
-      )
-    }
+  try {
+    organizationID = await ensureUserOrganization(user as any, payload)
+    user.defaultOrganization = organizationID as any
+  } catch (orgErr) {
+    console.error('[Campaigns] Failed to resolve or provision organization:', orgErr)
+    return Response.json(
+      { error: 'Your account does not have an active organization.' },
+      { status: 403 },
+    )
   }
 
   const fileBuffer = Buffer.from(await file.arrayBuffer())

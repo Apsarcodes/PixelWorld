@@ -276,10 +276,10 @@ export function CheckoutScreen({
             <div className="space-y-3">
               {[
                 ['Location', `${pricing.city}, India`],
-                ['Market Tier', `${pricing.cityTier} (${pricing.cityMultiplier}× weight)`],
+                ['Ad Placement', 'Live Interactive Billboard'],
                 ['Ad Space ID', campaign?.slotIdentifier || `CHN-A-${campaign?.slotId || 1024}`],
                 ['Size / Dimensions', `${pricing.dimensions} (${pricing.sizeCategory})`],
-                ['Duration', `${pricing.durationDays} Days`],
+                ['Duration', `${pricing.durationDays} Day${pricing.durationDays !== 1 ? 's' : ''}`],
                 ['Payment Gateway', 'YouPI-PG (Direct Peer-to-Bank)'],
               ].map(([k, v]) => (
                 <div

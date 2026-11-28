@@ -33,14 +33,16 @@ const assignMediaOwnership: CollectionBeforeValidateHook = ({ data, operation, r
   if (isPayloadAdmin(req)) return data
   if (req.user?.collection !== 'users') return data
 
-  const organization = appUserDefaultOrganization(req)
+  const userOrg = (req.user as any)?.defaultOrganization
+  const fallbackOrg = typeof userOrg === 'object' && userOrg !== null ? userOrg.id : userOrg
+  const organization = (data as any)?.organization || appUserDefaultOrganization(req) || fallbackOrg
   if (!organization) throw new Error('Your account does not have an organization.')
 
   if (operation === 'create') {
     return {
       ...data,
       organization,
-      uploadedBy: req.user.id,
+      uploadedBy: (data as any)?.uploadedBy || req.user.id,
       purpose: data?.purpose || 'creative',
     }
   }

@@ -31,16 +31,29 @@ export function SelectSpacePanel({
   onClose: () => void
   onContinue: (config: SelectedSpaceConfig) => void
 }) {
-  const [selectedSize, setSelectedSize] = useState<SizeCategory>('medium')
-  const [duration, setDuration] = useState<number>(30)
+  const initialSize: SizeCategory = useMemo(() => {
+    if (space.size === 'small' || space.w <= 100) return 'small'
+    if (space.size === 'large' || space.w >= 400) return 'large'
+    return 'medium'
+  }, [space])
+
+  const [selectedSize, setSelectedSize] = useState<SizeCategory>(initialSize)
+
+  React.useEffect(() => {
+    if (space.size === 'small' || space.w <= 100) setSelectedSize('small')
+    else if (space.size === 'large' || space.w >= 400) setSelectedSize('large')
+    else setSelectedSize('medium')
+  }, [space])
+
+  const [duration, setDuration] = useState<number>(1)
   const [isReserving, setIsReserving] = useState(false)
 
-  // Interactive Add-ons
+  // Interactive Add-ons (Defaulted to false for future enhancement)
   const [addons, setAddons] = useState({
     whatsappCta: false,
-    verifiedBadge: true,
+    verifiedBadge: false,
     priorityPlacement: false,
-    analyticsPro: true,
+    analyticsPro: false,
   })
 
   // Extract city from space location or default to Chennai
@@ -108,8 +121,9 @@ export function SelectSpacePanel({
   ]
 
   const durationPresets = [
+    { d: 1, label: '1D', discount: '' },
     { d: 7, label: '7D', discount: '' },
-    { d: 15, label: '15D', discount: '-5%' },
+    { d: 14, label: '14D', discount: '-5%' },
     { d: 30, label: '30D', discount: '-15%' },
     { d: 60, label: '60D', discount: '-20%' },
     { d: 90, label: '90D', discount: '-25%' },
@@ -139,9 +153,9 @@ export function SelectSpacePanel({
             <span className="font-semibold text-foreground font-['Outfit']">{cityName}, India</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground font-['JetBrains_Mono']">Marketplace Tier</span>
-            <span className="font-semibold text-[#6C5FE6] font-['Outfit'] flex items-center gap-1">
-              <Sparkles size={12} /> {pricing.cityTier} ({pricing.cityMultiplier}× traffic weight)
+            <span className="text-muted-foreground font-['JetBrains_Mono']">Ad Placement</span>
+            <span className="font-semibold text-[#00A882] font-['Outfit'] flex items-center gap-1">
+              <Sparkles size={12} /> Live Interactive Billboard
             </span>
           </div>
           <div className="flex items-center justify-between text-xs">
@@ -228,74 +242,7 @@ export function SelectSpacePanel({
           </div>
         </div>
 
-        {/* 3. Interactive Features & Add-ons */}
-        <div>
-          <label className="block text-sm font-['Outfit'] font-bold text-foreground mb-2.5">
-            3. Interactive Power-Ups (Optional)
-          </label>
-          <div className="space-y-2">
-            {[
-              {
-                id: 'whatsappCta' as const,
-                title: 'WhatsApp & Direct Call Button',
-                desc: 'One-click direct contact from your canvas ad slot',
-                price: '₹99',
-              },
-              {
-                id: 'verifiedBadge' as const,
-                title: 'Verified Advertiser Badge',
-                desc: 'Official blue verification checkmark overlay',
-                price: '₹149',
-              },
-              {
-                id: 'priorityPlacement' as const,
-                title: 'Hotspot Priority Highlight',
-                desc: 'Glowing border & higher zoom visibility rank',
-                price: '₹199',
-              },
-              {
-                id: 'analyticsPro' as const,
-                title: 'Real-Time Analytics Pro',
-                desc: 'Live hover impressions, click maps & device analytics',
-                price: '₹99',
-              },
-            ].map((addon) => {
-              const active = addons[addon.id]
-              return (
-                <div
-                  key={addon.id}
-                  onClick={() => toggleAddon(addon.id)}
-                  className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                    active
-                      ? 'border-[#00A882] bg-[#00A882]/8'
-                      : 'border-black/8 hover:border-black/15 bg-card'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div
-                      className={`w-5 h-5 rounded-md mt-0.5 flex items-center justify-center border transition-all ${
-                        active
-                          ? 'bg-[#00A882] border-[#00A882] text-white'
-                          : 'border-black/20 bg-white'
-                      }`}
-                    >
-                      {active && <Check size={12} strokeWidth={3} />}
-                    </div>
-                    <div>
-                      <div className="text-xs font-['Outfit'] font-bold text-foreground">{addon.title}</div>
-                      <div className="text-[11px] text-muted-foreground font-['Inter'] leading-tight">{addon.desc}</div>
-                    </div>
-                  </div>
-                  <span className="text-xs font-['Outfit'] font-bold text-foreground shrink-0 ml-2">
-                    +{addon.price}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* 4. Dynamic Pricing Calculation Breakdown */}
+        {/* 3. Pricing Calculation Breakdown */}
         <div className="rounded-2xl border border-[#6C5FE6]/25 bg-[#6C5FE6]/5 p-4.5 space-y-2.5">
           <div className="flex items-center justify-between pb-2 border-b border-black/8">
             <span className="text-xs font-['Outfit'] font-bold uppercase tracking-wider text-[#6C5FE6]">

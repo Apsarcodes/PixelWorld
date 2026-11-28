@@ -1,6 +1,8 @@
 import { appAuth } from '@/lib/app-auth'
+import { getPayloadClient } from '@/lib/payload'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { paymentService } from '@/lib/payments/service'
+import { ensureUserOrganization } from '@/lib/organization'
 
 export async function POST(request: Request) {
   try {
@@ -26,10 +28,16 @@ export async function POST(request: Request) {
     const addons = typeof body.addons === 'object' && body.addons !== null ? (body.addons as any) : undefined
     const returnUrl = (typeof body.returnUrl === 'string' && body.returnUrl) || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/?screen=dashboard`
 
-    const organizationId =
-      user.defaultOrganization && typeof user.defaultOrganization === 'object' && 'id' in user.defaultOrganization
-        ? (user.defaultOrganization as { id: string | number }).id
-        : user.defaultOrganization || user.id
+    const payload = await getPayloadClient()
+    let organizationId: string | number
+    try {
+      organizationId = await ensureUserOrganization(user as any, payload)
+    } catch {
+      organizationId =
+        user.defaultOrganization && typeof user.defaultOrganization === 'object' && 'id' in user.defaultOrganization
+          ? (user.defaultOrganization as { id: string | number }).id
+          : user.defaultOrganization || user.id
+    }
 
     const bookingResult = await paymentService.initiateBooking({
       userId: user.id,
