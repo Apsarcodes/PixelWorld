@@ -86,6 +86,8 @@ export function CanvasScreen({
     return counts
   }, [tiles])
 
+  const touchDistanceRef = useRef<number | null>(null)
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if ((e.target as HTMLElement).closest('.tile-btn')) return
@@ -108,6 +110,47 @@ export function CanvasScreen({
   )
 
   const handleMouseUp = useCallback(() => setIsDragging(false), [])
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length === 1) {
+        setIsDragging(true)
+        setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })
+        setPanStart({ ...pan })
+        touchDistanceRef.current = null
+      } else if (e.touches.length === 2) {
+        setIsDragging(false)
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        touchDistanceRef.current = Math.hypot(dx, dy)
+      }
+    },
+    [pan],
+  )
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length === 1 && isDragging) {
+        setPan({
+          x: panStart.x + (e.touches[0].clientX - dragStart.x),
+          y: panStart.y + (e.touches[0].clientY - dragStart.y),
+        })
+      } else if (e.touches.length === 2 && touchDistanceRef.current !== null) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        const distance = Math.hypot(dx, dy)
+        const factor = distance / touchDistanceRef.current
+        touchDistanceRef.current = distance
+        setZoom((z) => Math.max(0.25, Math.min(2.5, z * (1 + (factor - 1) * 0.5))))
+      }
+    },
+    [isDragging, dragStart, panStart],
+  )
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false)
+    touchDistanceRef.current = null
+  }, [])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault()
@@ -167,16 +210,16 @@ export function CanvasScreen({
       `}</style>
 
       {/* Top bar */}
-      <header className="flex items-center gap-4 px-6 py-3 border-b border-black/6 bg-[rgba(245,247,252,0.98)] backdrop-blur-xl z-40 shrink-0 shadow-sm">
+      <header className="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-2.5 sm:py-3 border-b border-black/6 bg-[rgba(245,247,252,0.98)] backdrop-blur-xl z-40 shrink-0 shadow-sm">
         <button
           onClick={() => onNavigate('landing')}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-black/8 hover:bg-black/5 text-muted-foreground hover:text-foreground text-xs font-['Outfit'] font-semibold transition-colors cursor-pointer"
+          className="flex items-center gap-1 px-2 py-1 rounded-lg border border-black/8 hover:bg-black/5 text-muted-foreground hover:text-foreground text-xs font-['Outfit'] font-semibold transition-colors cursor-pointer"
           title="Back to Landing Page"
         >
-          <ArrowLeft size={13} /> Home
+          <ArrowLeft size={13} /> <span className="hidden sm:inline">Home</span>
         </button>
         <PwLogo size="sm" />
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-['Outfit']">
+        <div className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground font-['Outfit']">
           <button onClick={() => onNavigate('landing')} className="hover:text-foreground">
             World
           </button>
@@ -185,83 +228,84 @@ export function CanvasScreen({
             India
           </button>
           <ChevronRight size={12} />
-          <div className="relative">
-            <button
-              onClick={() => setShowCityMenu((prev) => !prev)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 text-foreground font-semibold font-['Outfit'] transition-all cursor-pointer text-xs sm:text-sm"
-            >
-              <span>{INDIAN_CITIES.find((c) => c.slug === selectedCity?.toLowerCase())?.icon || '🏛️'}</span>
-              <span>{formattedCity}</span>
-              <ChevronDown size={14} className="text-muted-foreground" />
-            </button>
-            {showCityMenu && (
-              <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-2xl border border-black/10 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
-                <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-wider text-muted-foreground">
-                  Select Advertising Canvas
-                </div>
-                <div className="space-y-1">
-                  {INDIAN_CITIES.map((c) => (
-                    <button
-                      key={c.slug}
-                      onClick={() => {
-                        if (onSelectCity) onSelectCity(c.slug)
-                        setShowCityMenu(false)
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-all cursor-pointer ${
-                        selectedCity?.toLowerCase() === c.slug
-                          ? 'bg-[#6C5FE6]/10 text-[#6C5FE6] font-bold'
-                          : 'hover:bg-black/5 text-foreground'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{c.icon}</span>
-                        <div>
-                          <div className="font-['Outfit']">{c.name}</div>
-                          <div className="text-[10px] text-muted-foreground">{c.state}</div>
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground font-['JetBrains_Mono']">
-                        {c.tier}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => setShowCityMenu((prev) => !prev)}
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 text-foreground font-semibold font-['Outfit'] transition-all cursor-pointer text-xs sm:text-sm"
+          >
+            <span>{INDIAN_CITIES.find((c) => c.slug === selectedCity?.toLowerCase())?.icon || '🏛️'}</span>
+            <span>{formattedCity}</span>
+            <ChevronDown size={14} className="text-muted-foreground" />
+          </button>
+          {showCityMenu && (
+            <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-2xl border border-black/10 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+              <div className="px-3 py-1.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-wider text-muted-foreground">
+                Select Advertising Canvas
               </div>
-            )}
-          </div>
-          {isLoadingSlots && (
-            <span className="text-xs text-[#6C5FE6] font-['JetBrains_Mono'] animate-pulse ml-1">
-              (syncing...)
-            </span>
+              <div className="space-y-1">
+                {INDIAN_CITIES.map((c) => (
+                  <button
+                    key={c.slug}
+                    onClick={() => {
+                      if (onSelectCity) onSelectCity(c.slug)
+                      setShowCityMenu(false)
+                    }}
+                    className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-all cursor-pointer ${
+                      selectedCity?.toLowerCase() === c.slug
+                        ? 'bg-[#6C5FE6]/10 text-[#6C5FE6] font-bold'
+                        : 'hover:bg-black/5 text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{c.icon}</span>
+                      <div>
+                        <div className="font-['Outfit']">{c.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{c.state}</div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-['JetBrains_Mono']">
+                      {c.tier}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-        <div className="ml-auto flex items-center gap-3">
-          <div className="relative">
+        {isLoadingSlots && (
+          <span className="text-xs text-[#6C5FE6] font-['JetBrains_Mono'] animate-pulse ml-1 hidden sm:inline">
+            (syncing...)
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="relative hidden lg:block">
             <Search
               size={14}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
             <input
               placeholder="Search ads or businesses..."
-              className="bg-[#EDF0F8] border border-black/8 rounded-lg pl-9 pr-4 py-2 text-sm font-['Outfit'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#6C5FE6]/40 w-60"
+              className="bg-[#EDF0F8] border border-black/8 rounded-lg pl-9 pr-4 py-2 text-sm font-['Outfit'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#6C5FE6]/40 w-48 xl:w-60"
             />
           </div>
           {user && (user.role === 'admin' || isOwnerEmail(user.email)) ? (
             <>
-              <GhostBtn small onClick={() => onNavigate('admin-canvas')}>
+              <GhostBtn small className="hidden sm:inline-flex" onClick={() => onNavigate('admin-canvas')}>
                 Canvas Spaces
               </GhostBtn>
               <PrimaryBtn small onClick={() => onNavigate('admin')}>
-                Admin Dashboard
+                Admin
               </PrimaryBtn>
             </>
           ) : (
             <>
-              <GhostBtn small onClick={() => onNavigate(user ? 'dashboard' : 'login')}>
+              <GhostBtn small className="hidden sm:inline-flex" onClick={() => onNavigate(user ? 'dashboard' : 'login')}>
                 My Ads
               </GhostBtn>
               <PrimaryBtn
                 small
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
                 onClick={() => {
                   if (!user) {
                     onNavigate('login')
@@ -270,7 +314,7 @@ export function CanvasScreen({
                   }
                 }}
               >
-                + Post Your Ad
+                + Post Ad
               </PrimaryBtn>
             </>
           )}
@@ -353,12 +397,15 @@ export function CanvasScreen({
 
       {/* Canvas area */}
       <div
-        className="relative flex-1 overflow-hidden"
+        className="relative flex-1 overflow-hidden touch-none"
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >

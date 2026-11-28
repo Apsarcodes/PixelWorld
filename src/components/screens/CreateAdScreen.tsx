@@ -120,7 +120,7 @@ export function CreateAdScreen({
     const finalAdName =
       adName.trim() ||
       `${brandName.trim() || 'Ad Campaign'} - ${new Date().toLocaleDateString()}`
-    const finalBrandName = brandName.trim() || 'PixelWorld Advertiser'
+    const finalBrandName = brandName.trim() || 'PixelWord Advertiser'
     const finalHeadline = headline.trim() || 'Exclusive Promotion'
     const finalDesc = desc.trim()
 
@@ -188,50 +188,50 @@ export function CreateAdScreen({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="flex items-center justify-between px-8 py-4 border-b border-black/6 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-3.5 sm:py-4 border-b border-black/6 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl sticky top-0 z-50">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit']"
+            className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground hover:text-foreground text-xs sm:text-sm font-['Outfit']"
           >
-            <ArrowLeft size={16} /> Back to Canvas
+            <ArrowLeft size={16} /> <span className="hidden sm:inline">Back to Canvas</span><span className="sm:hidden">Back</span>
           </button>
-          <div className="w-px h-5 bg-white/10" />
+          <div className="w-px h-4 sm:h-5 bg-black/10" />
           <PwLogo size="sm" />
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           {steps.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
+            <div key={s} className="flex items-center gap-1.5 sm:gap-2">
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-['Outfit'] font-bold ${step > i + 1 ? 'bg-[#00A882] text-black' : step === i + 1 ? 'bg-[#6C5FE6] text-white' : 'bg-black/8 text-muted-foreground'}`}
               >
                 {step > i + 1 ? <Check size={12} /> : i + 1}
               </div>
               <span
-                className={`text-sm font-['Outfit'] ${step === i + 1 ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}
+                className={`text-xs sm:text-sm font-['Outfit'] hidden sm:inline ${step === i + 1 ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}
               >
                 {s}
               </span>
-              {i < steps.length - 1 && <div className="w-8 h-px bg-white/10 ml-2" />}
+              {i < steps.length - 1 && <div className="w-4 sm:w-8 h-px bg-black/10 ml-1 sm:ml-2" />}
             </div>
           ))}
         </div>
-        <div className="w-32" />
+        <div className="hidden sm:block w-32" />
       </header>
 
-      <div className="max-w-4xl mx-auto px-8 py-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
         {step === 1 && (
           <div className="max-w-5xl">
-            <h2 className="font-['Outfit'] font-black text-4xl text-foreground mb-1">
+            <h2 className="font-['Outfit'] font-black text-2xl sm:text-4xl text-foreground mb-1">
               Choose Your Space
             </h2>
-            <p className="text-muted-foreground font-['Inter'] mb-8">
+            <p className="text-sm sm:text-base text-muted-foreground font-['Inter'] mb-6 sm:mb-8">
               Configure your ad dimensions, rental period, and upload your creative.
             </p>
 
-            <div className="grid grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               {/* Left — config column */}
-              <div className="col-span-3 space-y-5">
+              <div className="lg:col-span-3 space-y-5">
                 {/* Space info */}
                 <div className="rounded-2xl border border-[#6C5FE6]/20 bg-[#6C5FE6]/4 p-5 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-[#6C5FE6]/12 flex items-center justify-center shrink-0">
@@ -573,7 +573,7 @@ export function CreateAdScreen({
               </div>
 
               {/* Right — campaign info + cost */}
-              <div className="col-span-2 space-y-5">
+              <div className="lg:col-span-2 space-y-5">
                 {/* Campaign Information */}
                 <div className="rounded-2xl border border-black/8 bg-card p-5">
                   <div className="text-sm font-['Outfit'] font-bold text-foreground mb-1">

@@ -207,7 +207,7 @@ export function LoginScreen({
                 Welcome back
               </h1>
               <p className="text-muted-foreground font-['Inter'] text-sm">
-                Sign in to your PixelWorld account
+                Sign in to your PixelWord account
               </p>
             </div>
 
@@ -366,7 +366,7 @@ export function LoginScreen({
                 Secure Account Recovery
               </div>
               <p className="text-xs text-muted-foreground font-['Inter'] leading-relaxed">
-                Verification codes expire after 10 minutes. Check your inbox and spam folder for the email from PixelWorld.
+                Verification codes expire after 10 minutes. Check your inbox and spam folder for the email from PixelWord.
               </p>
             </div>
           </div>

@@ -234,7 +234,7 @@ export function LandingScreen({ onNavigate }: { onNavigate: (s: Screen) => void 
               Ready to stake your claim?
             </h2>
             <p className="text-muted-foreground mb-8 font-['Inter']">
-              Join 42,000+ advertisers who have made PixelWorld their digital home.
+              Join 42,000+ advertisers who have made PixelWord their digital home.
             </p>
             <PrimaryBtn
               onClick={() => onNavigate('canvas')}

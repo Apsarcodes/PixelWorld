@@ -75,7 +75,7 @@ export function AuthPanel({
         )}
       </div>
       <div className="text-white/25 font-['JetBrains_Mono'] text-xs relative">
-        © 2026 PixelWorld · All rights reserved
+        © 2026 PixelWord · All rights reserved
       </div>
     </div>
   )

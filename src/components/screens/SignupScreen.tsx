@@ -125,7 +125,7 @@ export function SignupScreen({
           in minutes.
         </>
       }
-      subtitle="Join thousands of businesses already reaching their audience on PixelWorld's interactive canvas."
+      subtitle="Join thousands of businesses already reaching their audience on PixelWord's interactive canvas."
     />
   )
 
@@ -185,7 +185,7 @@ export function SignupScreen({
                 Create account
               </h1>
               <p className="text-muted-foreground font-['Inter'] text-sm">
-                Start your PixelWorld journey
+                Start your PixelWord journey
               </p>
             </div>
 
@@ -327,7 +327,7 @@ export function SignupScreen({
                 Your profile
               </h1>
               <p className="text-muted-foreground font-['Inter'] text-sm">
-                Tell us how you'll use PixelWorld
+                Tell us how you'll use PixelWord
               </p>
             </div>
 
@@ -413,7 +413,7 @@ export function SignupScreen({
                   {agreed && <Check size={11} className="text-white" />}
                 </div>
                 <span className="text-xs text-muted-foreground font-['Inter'] leading-relaxed">
-                  I agree to PixelWorld's{' '}
+                  I agree to PixelWord's{' '}
                   <span className="text-[#6C5FE6] font-semibold">Terms of Service</span> and{' '}
                   <span className="text-[#6C5FE6] font-semibold">Privacy Policy</span>
                 </span>

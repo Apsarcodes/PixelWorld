@@ -421,7 +421,7 @@ export function UserProfileScreen({
                     Team Members
                   </h2>
                   <p className="text-sm text-muted-foreground font-['Inter']">
-                    Invite and manage who has access to your PixelWorld account.
+                    Invite and manage who has access to your PixelWord account.
                   </p>
                 </div>
                 <Badge color="purple">{members.length} members</Badge>

@@ -5,7 +5,7 @@ export function PwLogo({ size = 'md', dark = false }: { size?: 'sm' | 'md' | 'lg
   return (
     <span className={`font-['Outfit'] font-black tracking-tight ${sizes[size]}`}>
       <span className={dark ? 'text-white' : 'text-[#6C5FE6]'}>Pixel</span>
-      <span className={dark ? 'text-white/70' : 'text-foreground'}>World</span>
+      <span className={dark ? 'text-white/70' : 'text-foreground'}>Word</span>
     </span>
   )
 }

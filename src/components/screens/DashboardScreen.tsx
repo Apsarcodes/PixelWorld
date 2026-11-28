@@ -88,7 +88,7 @@ export function DashboardScreen({
   const [notifications, setNotifications] = useState([
     {
       id: 1,
-      title: 'Welcome to PixelWorld!',
+      title: 'Welcome to PixelWord!',
       message: 'Your advertiser account is active. Choose an ad space on the canvas to launch your brand.',
       time: 'Just now',
       read: false,
@@ -680,7 +680,7 @@ export function DashboardScreen({
                   <input
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
-                    placeholder="e.g. PixelWorld Media"
+                    placeholder="e.g. PixelWord Media"
                     className="w-full bg-[#FAFBFD] border border-black/8 rounded-xl px-3.5 py-2 text-sm font-['Outfit'] text-foreground focus:outline-none focus:border-[#6C5FE6]"
                   />
                 </div>

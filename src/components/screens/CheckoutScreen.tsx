@@ -239,18 +239,20 @@ export function CheckoutScreen({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="flex items-center justify-between px-8 py-4 border-b border-black/6 sticky top-0 z-50 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl">
-        <div className="flex items-center gap-4">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-3.5 sm:py-4 border-b border-black/6 sticky top-0 z-50 bg-[rgba(245,247,252,0.95)] backdrop-blur-xl">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => (onBack ? onBack() : onNavigate('create-ad'))}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-['Outfit'] cursor-pointer transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground hover:text-foreground text-xs sm:text-sm font-['Outfit'] cursor-pointer transition-colors"
           >
-            <ArrowLeft size={16} /> Back to Ad Setup
+            <ArrowLeft size={16} /> <span className="hidden sm:inline">Back to Ad Setup</span><span className="sm:hidden">Back</span>
           </button>
-          <div className="w-px h-5 bg-black/10" />
+          <div className="w-px h-4 sm:h-5 bg-black/10" />
           <PwLogo size="sm" />
         </div>
-        <h2 className="font-['Outfit'] font-bold text-lg text-foreground">Secure Checkout</h2>
+        <h2 className="font-['Outfit'] font-bold text-sm sm:text-lg text-foreground truncate max-w-[140px] sm:max-w-none">
+          Secure Checkout
+        </h2>
         <div className="flex items-center gap-3">
           <button
             onClick={() => onNavigate('canvas')}
@@ -440,6 +442,16 @@ export function CheckoutScreen({
               )}
             </PrimaryBtn>
 
+            {paymentDetails && (
+              <button
+                type="button"
+                onClick={() => setShowUpiModal(true)}
+                className="w-full py-2.5 rounded-xl bg-[#00A882]/10 hover:bg-[#00A882]/20 border border-[#00A882]/30 text-[#00A882] text-xs font-['Outfit'] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <QrCode size={14} /> Reopen UPI QR / Confirm Settlement (Order: {paymentDetails.orderId})
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => (onBack ? onBack() : onNavigate('create-ad'))}
@@ -460,23 +472,24 @@ export function CheckoutScreen({
 
       {/* YouPI-PG Interactive UPI Modal */}
       {showUpiModal && paymentDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-black/10 rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
+          <div className="bg-card border border-black/10 rounded-3xl max-w-md w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setShowUpiModal(false)}
-              className="absolute top-5 right-5 text-muted-foreground hover:text-foreground p-1 rounded-lg"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 text-muted-foreground hover:text-foreground p-1 rounded-lg"
+              aria-label="Close UPI payment modal"
             >
               <X size={20} />
             </button>
 
             {/* Modal Header */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#6C5FE6]/10 flex items-center justify-center text-[#6C5FE6]">
+              <div className="w-10 h-10 rounded-xl bg-[#6C5FE6]/10 flex items-center justify-center text-[#6C5FE6] shrink-0">
                 <QrCode size={22} />
               </div>
               <div>
-                <h3 className="font-['Outfit'] font-bold text-lg text-foreground">
-                  YouPI-PG — Pay via UPI
+                <h3 className="font-['Outfit'] font-bold text-base sm:text-lg text-foreground">
+                  Scan & Pay via Any UPI App
                 </h3>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-['JetBrains_Mono']">
                   <span>Order: {paymentDetails.orderId}</span>
@@ -489,48 +502,50 @@ export function CheckoutScreen({
             </div>
 
             {/* Dynamic UPI QR Code */}
-            <div className="my-5 p-4 rounded-2xl bg-[#F8FAFC] border border-black/8 flex flex-col items-center justify-center text-center">
-              <div className="w-48 h-48 bg-white p-3 rounded-xl shadow-sm border border-black/5 flex items-center justify-center">
-                {/* Standard dynamic QR code service rendering the UPI Intent URL */}
+            <div className="my-3 sm:my-4 p-4 rounded-2xl bg-[#F8FAFC] border border-black/8 flex flex-col items-center justify-center text-center">
+              <div className="w-44 h-44 sm:w-48 sm:h-48 bg-white p-2.5 rounded-xl shadow-sm border border-black/5 flex items-center justify-center">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
                     paymentDetails.upiQrString || paymentDetails.upiIntentUrl || 'upi://pay'
                   )}`}
                   alt="Scan to Pay via UPI"
                   className="w-full h-full object-contain"
                 />
               </div>
-              <p className="text-xs text-muted-foreground font-['Inter'] mt-3">
-                Scan with <span className="font-semibold text-foreground">GPay, PhonePe, Paytm, BHIM</span> or your mobile bank app
+              <p className="text-xs text-muted-foreground font-['Inter'] mt-2.5">
+                Scan with <span className="font-semibold text-foreground">Google Pay, PhonePe, Paytm, BHIM</span> or any bank app
               </p>
-              <div className="mt-2 text-lg font-black font-['Outfit'] text-[#6C5FE6]">
+              <div className="mt-1.5 text-xl font-black font-['Outfit'] text-[#6C5FE6]">
                 ₹{paymentDetails.amount.toLocaleString()}
+              </div>
+              <div className="text-[11px] text-muted-foreground font-['JetBrains_Mono'] mt-0.5">
+                Merchant VPA: <span className="text-foreground font-semibold">rafimmedia-1@oksbi</span>
               </div>
             </div>
 
             {/* Direct Mobile UPI Intent Buttons */}
-            <div className="space-y-2 mb-5">
-              <div className="text-xs font-['Outfit'] font-semibold text-muted-foreground mb-1">
-                Or Tap to Pay directly in your UPI App:
+            <div className="space-y-1.5 mb-4">
+              <div className="text-xs font-['Outfit'] font-semibold text-muted-foreground">
+                On mobile? Tap your UPI app to pay directly:
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <a
                   href={paymentDetails.upiIntentUrl || '#'}
-                  className="p-2.5 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-1 transition-all"
+                  className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
                 >
                   <Smartphone size={16} className="text-[#4285F4]" />
                   <span className="text-[11px] font-['Outfit'] font-bold text-foreground">GPay</span>
                 </a>
                 <a
                   href={paymentDetails.upiIntentUrl || '#'}
-                  className="p-2.5 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-1 transition-all"
+                  className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
                 >
                   <Smartphone size={16} className="text-[#5F259F]" />
                   <span className="text-[11px] font-['Outfit'] font-bold text-foreground">PhonePe</span>
                 </a>
                 <a
                   href={paymentDetails.upiIntentUrl || '#'}
-                  className="p-2.5 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-1 transition-all"
+                  className="p-2 rounded-xl border border-black/8 bg-card hover:bg-slate-50 text-center flex flex-col items-center gap-0.5 transition-all cursor-pointer"
                 >
                   <Smartphone size={16} className="text-[#00BAF2]" />
                   <span className="text-[11px] font-['Outfit'] font-bold text-foreground">Paytm</span>
@@ -545,46 +560,53 @@ export function CheckoutScreen({
               </div>
             )}
 
-            {/* Direct UTR Confirmation Card */}
-            <div className="p-3.5 rounded-2xl bg-[#6C5FE6]/5 border border-[#6C5FE6]/20 space-y-2.5 mb-2">
+            {/* Instant Activation Card */}
+            <div className="p-3.5 rounded-2xl bg-[#00A882]/8 border border-[#00A882]/25 space-y-3 mb-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-['Outfit'] font-bold text-foreground">
-                  Paid via UPI? Confirm Transfer
+                <span className="text-xs font-['Outfit'] font-bold text-[#00A882]">
+                  Step 2: Bank Received Payment?
                 </span>
-                <span className="text-[10px] text-[#00A882] font-semibold font-['JetBrains_Mono']">
-                  Instant Verification
+                <span className="text-[10px] text-muted-foreground font-semibold font-['JetBrains_Mono']">
+                  Instant Activation
                 </span>
               </div>
-              <div className="flex gap-2">
-                <input
-                  value={utrNumber}
-                  onChange={(e) => setUtrNumber(e.target.value)}
-                  placeholder="Enter 12-digit UPI UTR (Optional)"
-                  className="flex-1 bg-white border border-black/10 rounded-xl px-3 py-2 text-xs font-['JetBrains_Mono'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#6C5FE6]"
-                />
-                <button
-                  onClick={() => handleConfirmPayment()}
-                  disabled={isConfirming}
-                  className="px-3 py-2 rounded-xl bg-[#00A882] hover:bg-[#009674] text-white text-xs font-['Outfit'] font-bold transition-all disabled:opacity-50 shrink-0 cursor-pointer"
-                >
-                  {isConfirming ? <Loader2 size={13} className="animate-spin" /> : 'Confirm'}
-                </button>
-              </div>
+
               <button
                 onClick={() => handleConfirmPayment()}
                 disabled={isConfirming}
-                className="w-full py-2.5 rounded-xl bg-[#6C5FE6] hover:bg-[#5C4FE0] text-white text-xs font-['Outfit'] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-[#6C5FE6]/25"
+                className="w-full py-3 rounded-xl bg-[#00A882] hover:bg-[#009674] text-white text-sm font-['Outfit'] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#00A882]/25 disabled:opacity-50"
               >
                 {isConfirming ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" /> Verifying Bank Settlement...
+                    <Loader2 size={16} className="animate-spin" /> Verifying Bank Settlement...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 size={14} /> I Have Completed Payment (Activate My Ad)
+                    <CheckCircle2 size={16} /> I Have Paid ₹{paymentDetails.amount.toLocaleString()} — Activate My Ad
                   </>
                 )}
               </button>
+
+              <div className="border-t border-black/8 pt-2.5">
+                <div className="text-[11px] text-muted-foreground font-['Outfit'] mb-1.5">
+                  Have 12-digit UPI UTR / Reference number from bank SMS? (Optional)
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={utrNumber}
+                    onChange={(e) => setUtrNumber(e.target.value)}
+                    placeholder="Enter 12-digit UPI UTR"
+                    className="flex-1 bg-white border border-black/10 rounded-xl px-3 py-2 text-xs font-['JetBrains_Mono'] text-foreground placeholder-muted-foreground focus:outline-none focus:border-[#6C5FE6]"
+                  />
+                  <button
+                    onClick={() => handleConfirmPayment()}
+                    disabled={isConfirming}
+                    className="px-3 py-2 rounded-xl bg-[#6C5FE6] hover:bg-[#5C4FE0] text-white text-xs font-['Outfit'] font-bold transition-all disabled:opacity-50 shrink-0 cursor-pointer"
+                  >
+                    Confirm UTR
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Status indicator */}

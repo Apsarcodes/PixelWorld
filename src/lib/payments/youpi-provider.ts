@@ -72,10 +72,10 @@ export class YoupiPaymentProvider implements PaymentProvider {
 
       if (res.ok) {
         const data = await res.json()
-        const merchantVpa = process.env.YOUPI_MERCHANT_VPA || 'pixelworld@upi'
+        const merchantVpa = process.env.YOUPI_MERCHANT_VPA || 'rafimmedia-1@oksbi'
         const upiIntentUrl =
           data.upiIntentUrl ||
-          `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWorld Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWorld Ad Booking')}&cu=INR`
+          `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWord Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWord Ad Booking')}&cu=INR`
         return {
           paymentId: data.paymentId || data.id,
           orderId: data.orderId || params.orderId,
@@ -91,7 +91,7 @@ export class YoupiPaymentProvider implements PaymentProvider {
     } catch {
       // Direct live UPI generation using configured merchant VPA
       const merchantVpa = process.env.YOUPI_MERCHANT_VPA || 'rafimmedia-1@oksbi'
-      const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWorld Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWorld Ad Booking')}&cu=INR`
+      const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent('PixelWord Ads')}&am=${params.amount}&tr=${encodeURIComponent(params.orderId)}&tn=${encodeURIComponent('PixelWord Ad Booking')}&cu=INR`
       const paymentId = `youpi_${crypto.randomBytes(8).toString('hex')}`
       return {
         paymentId,

@@ -964,7 +964,7 @@ export function AdminDashboard({ onNavigate }: { onNavigate: (s: Screen) => void
                       Active Campaign Ad Dimensions & Pricing
                     </h3>
                     <p className="text-sm text-muted-foreground font-['Inter'] mb-6">
-                      PixelWorld standardized advertising formats. All other custom billboard formats are strictly restricted to ensure clean grid alignment across all canvas displays.
+                      PixelWord standardized advertising formats. All other custom billboard formats are strictly restricted to ensure clean grid alignment across all canvas displays.
                     </p>
 
                     <div className="grid grid-cols-3 gap-6">

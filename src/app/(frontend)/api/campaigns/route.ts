@@ -100,7 +100,7 @@ export async function POST(request: Request) {
   const form = await request.formData()
   const file = form.get('creative')
   const name = text(form, 'name', 120) || 'My Ad Campaign'
-  const brandName = text(form, 'brandName', 120) || 'PixelWorld Advertiser'
+  const brandName = text(form, 'brandName', 120) || 'PixelWord Advertiser'
   const headline = text(form, 'headline', 180) || 'Exclusive Promotion'
   const description = text(form, 'description', 1000)
   const callToAction = text(form, 'callToAction', 40)

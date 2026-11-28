@@ -1,5 +1,5 @@
 /**
- * Resend Email Service for PixelWorld
+ * Resend Email Service for PixelWord
  * 
  * Supports transactional emails:
  * - Order Confirmation & GST Tax Invoices
@@ -33,7 +33,7 @@ export async function sendEmail({
   }
 
   // Default sender: Custom domain or Resend testing domain
-  const sender = from || process.env.RESEND_FROM_EMAIL || 'PixelWorld <notifications@pixelword.in>'
+  const sender = from || process.env.RESEND_FROM_EMAIL || 'PixelWord <notifications@pixelword.in>'
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -55,6 +55,37 @@ export async function sendEmail({
 
     if (!res.ok) {
       console.error('[Resend Error]', data)
+      // If custom domain is pending verification in Resend dashboard, fall back to onboarding@resend.dev
+      const msg = String(data?.message || '')
+      if (
+        (msg.includes('domain is not verified') || msg.includes('testing domain') || msg.includes('from_email')) &&
+        !sender.includes('onboarding@resend.dev')
+      ) {
+        console.warn('[Resend] Domain verification pending in Resend dashboard. Falling back to onboarding@resend.dev...')
+        try {
+          const fallbackRes = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              from: 'PixelWord <onboarding@resend.dev>',
+              to: Array.isArray(to) ? to : [to],
+              subject,
+              html,
+              reply_to: replyTo || 'support@pixelword.in',
+            }),
+          })
+          const fallbackData = await fallbackRes.json()
+          if (fallbackRes.ok) {
+            console.log('[Resend] Sent successfully via onboarding@resend.dev fallback:', fallbackData.id)
+            return { success: true, id: fallbackData.id }
+          }
+        } catch (fallbackErr) {
+          console.error('[Resend Fallback Error]', fallbackErr)
+        }
+      }
       return { success: false, error: data?.message || 'Failed to send email' }
     }
 
@@ -112,7 +143,7 @@ export async function sendOrderConfirmationEmail(params: {
   <div class="container">
     <div class="header">
       <h1>Payment Confirmed! 🚀</h1>
-      <p>Your advertisement is now LIVE on PixelWorld.</p>
+      <p>Your advertisement is now LIVE on PixelWord.</p>
       <div class="badge-paid">TAX INVOICE • PAID</div>
     </div>
     
@@ -164,7 +195,7 @@ export async function sendOrderConfirmationEmail(params: {
     </div>
 
     <div class="footer">
-      <p style="margin: 0 0 6px 0;">PixelWorld Digital Advertising Platform</p>
+      <p style="margin: 0 0 6px 0;">PixelWord Digital Advertising Platform</p>
       <p style="margin: 0;">Recipient: ${params.to} • Support: support@pixelword.in</p>
     </div>
   </div>
@@ -174,7 +205,7 @@ export async function sendOrderConfirmationEmail(params: {
 
   return sendEmail({
     to: params.to,
-    subject: `Payment Confirmed & Invoice ${params.invoiceNumber} — PixelWorld`,
+    subject: `Payment Confirmed & Invoice ${params.invoiceNumber} — PixelWord`,
     html,
   })
 }
@@ -196,7 +227,7 @@ export async function sendPasswordResetEmail(params: {
   <div style="max-width: 500px; margin: auto; background: white; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0;">
     <h2 style="color: #6C5FE6; margin-top: 0;">Reset Your Password</h2>
     <p style="color: #475569; font-size: 14px; line-height: 1.6;">
-      We received a request to reset your PixelWorld password. Click the button below to choose a new password:
+      We received a request to reset your PixelWord password. Click the button below to choose a new password:
     </p>
     <div style="text-align: center; margin: 30px 0;">
       <a href="${resetUrl}" style="background: #6C5FE6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
@@ -211,7 +242,7 @@ export async function sendPasswordResetEmail(params: {
 
   return sendEmail({
     to: params.to,
-    subject: 'Reset your PixelWorld password',
+    subject: 'Reset your PixelWord password',
     html,
   })
 }
@@ -231,7 +262,7 @@ export async function sendPasswordResetOtpEmail(params: {
     <div style="text-align: center; margin-bottom: 24px;">
       <div style="display: inline-block; background: #6C5FE6; color: white; width: 44px; height: 44px; line-height: 44px; border-radius: 12px; font-weight: 800; font-size: 20px; margin-bottom: 12px;">PW</div>
       <h2 style="color: #1e293b; margin: 0; font-size: 22px; font-weight: 800;">Password Reset Code</h2>
-      <p style="color: #64748b; font-size: 14px; margin-top: 6px;">Use the 6-digit verification code below to reset your PixelWorld account password:</p>
+      <p style="color: #64748b; font-size: 14px; margin-top: 6px;">Use the 6-digit verification code below to reset your PixelWord account password:</p>
     </div>
     <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center; margin: 28px 0; border: 1px dashed #cbd5e1;">
       <span style="font-size: 34px; font-weight: 900; letter-spacing: 10px; color: #6C5FE6; font-family: monospace;">${params.otp}</span>
@@ -246,7 +277,7 @@ export async function sendPasswordResetOtpEmail(params: {
 
   return sendEmail({
     to: params.to,
-    subject: `Your PixelWorld Password Reset Code: ${params.otp}`,
+    subject: `Your PixelWord Password Reset Code: ${params.otp}`,
     html,
   })
 }
