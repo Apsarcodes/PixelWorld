@@ -36,12 +36,46 @@ export async function runDatabaseCleanup() {
     if (isAdmin) {
       console.log(`  🛡️ Preserving Super Admin: ${emailLower}`)
     } else {
-      await payload.delete({
-        collection: 'users',
-        id: u.id,
-        overrideAccess: true,
-      })
-      deletedCount++
+      try {
+        await payload.delete({
+          collection: 'notifications' as any,
+          where: { user: { equals: u.id } },
+          overrideAccess: true,
+        }).catch(() => {})
+
+        await payload.delete({
+          collection: 'invoices' as any,
+          where: { user: { equals: u.id } },
+          overrideAccess: true,
+        }).catch(() => {})
+
+        await payload.delete({
+          collection: 'payments' as any,
+          where: { user: { equals: u.id } },
+          overrideAccess: true,
+        }).catch(() => {})
+
+        await payload.delete({
+          collection: 'organization-memberships' as any,
+          where: { user: { equals: u.id } },
+          overrideAccess: true,
+        }).catch(() => {})
+
+        await payload.delete({
+          collection: 'organizations' as any,
+          where: { owner: { equals: u.id } },
+          overrideAccess: true,
+        }).catch(() => {})
+
+        await payload.delete({
+          collection: 'users',
+          id: u.id,
+          overrideAccess: true,
+        })
+        deletedCount++
+      } catch (err) {
+        console.warn(`Failed to delete user ${u.id}:`, err)
+      }
     }
   }
   console.log(`✓ Deleted ${deletedCount} non-admin users.`)
